@@ -1,0 +1,53 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets:= import("@platforma-sdk/workflow-tengo:assets")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+pfUMAPConv := import(":pf-umap-conv")
+pfTSNEConv := import(":pf-tsne-conv")
+
+wf.prepare(func(args){
+	return {
+		resolvedInput: wf.resolve(args.countsRef, { errIfMissing: true })
+	}
+})
+
+wf.body(func(args) {
+
+	blockId := wf.blockId().getDataAsJson()
+	rawCounts := args.resolvedInput
+	inputSpec := rawCounts.spec
+
+	csvCounts := xsv.exportFrame([rawCounts], "csv", {})
+
+	dimReduction := exec.builder().
+		software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-dimRed")).
+		addFile("rawCounts.csv", csvCounts).
+		arg("--file_path").arg("rawCounts.csv").
+		arg("--output_dir").arg(".").
+		// arg("--n_pcs").arg(nPC).
+		// arg("--n_neighbors").arg(nNeighbors).
+		saveFile("umap_results.csv").
+		saveFile("tsne_results.csv").
+		printErrStreamToStdout().
+		saveStdoutContent().
+		cache(24 * 60 * 60 * 1000).
+		run()
+
+	UMAPDimImportParams := pfUMAPConv.getColumns(blockId, inputSpec)
+	UMAPPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", UMAPDimImportParams)
+
+	tSNEDimImportParams := pfTSNEConv.getColumns(blockId, inputSpec)
+	tSNEPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", tSNEDimImportParams)
+
+
+	return {
+		outputs: {
+			UMAPPf: pframes.exportFrame(UMAPPf),
+			tSNEPf: pframes.exportFrame(tSNEPf)
+		},
+		exports: {}
+	}
+})
+

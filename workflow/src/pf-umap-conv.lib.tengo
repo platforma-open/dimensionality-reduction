@@ -1,0 +1,54 @@
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+getColumns := func(blockId, inputSpec) {
+  return {
+    "axes": [
+      {
+        "column": "SampleId",
+        "spec": inputSpec.axesSpec[0]
+      },
+      {
+        "column": "CellId",
+        "spec": inputSpec.axesSpec[1]
+      },
+      {
+        "column": "UMAP",
+        "id": "umapdim",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/umapdim",
+          "type": "String",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "UMAP dimension"
+          }
+        }
+      }
+      ],
+    "columns": [
+      {
+        "column": "Value",
+        "id": "umapdimvalue",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/umapdimvalue",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "UMAP value"
+          }
+        }
+      }
+      ],
+    "storageFormat": "Binary",
+    "partitionKeyLength": 1
+  }
+}
+
+export ll.toStrict({
+	getColumns: getColumns
+})
