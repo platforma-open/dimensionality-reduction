@@ -12,7 +12,8 @@ import {
 } from '@platforma-sdk/model';
 
 export type UiState = {
-  graphState: GraphMakerState;
+  graphStateUMAP: GraphMakerState;
+  graphStateTSNE: GraphMakerState;
 };
 
 // export type Formula = {
@@ -35,8 +36,12 @@ export const model = BlockModel.create()
   })
 
   .withUiState<UiState>({
-    graphState: {
-      title: 'Dimensionality Reduction',
+    graphStateUMAP: {
+      title: 'UMAP',
+      template: 'dots'
+    },
+    graphStateTSNE: {
+      title: 'tSNE',
       template: 'dots'
     }
   })

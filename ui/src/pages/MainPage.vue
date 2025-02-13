@@ -3,11 +3,11 @@ import '@milaboratories/graph-maker/styles';
 import { PlBlockPage, PlBtnGhost, PlDropdownRef, PlMaskIcon24, PlSlideModal } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import { ref } from 'vue';
-import { GraphMaker } from '@milaboratories/graph-maker';
 
 const app = useApp();
 
-const settingsAreShown = ref(app.model.outputs.UMAPPf === undefined)
+// const settingsAreShown = ref(app.model.outputs.UMAPPf === undefined)
+const settingsAreShown = ref(true)
 const showSettings = () => { settingsAreShown.value = true }
 
 </script>
@@ -15,7 +15,7 @@ const showSettings = () => { settingsAreShown.value = true }
 <template>
   <PlBlockPage>
 
-    <!-- <template #title>Dimensionality Reduction</template> -->
+    <template #title>Dimensionality Reduction</template>
     <template #append>
       <PlBtnGhost @click.stop="showSettings">
         Settings
