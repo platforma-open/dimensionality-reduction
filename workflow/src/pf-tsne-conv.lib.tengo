@@ -1,0 +1,69 @@
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+getColumns := func(blockId, inputSpec) {
+  return {
+    "axes": [
+      {
+        "column": "SampleId",
+        "spec": inputSpec.axesSpec[0]
+      },
+      {
+        "column": "CellId",
+        "spec": inputSpec.axesSpec[1]
+      }
+      ],
+    "columns": [
+      {
+        "column": "TSNE1",
+        "id": "tsne1",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/tsne1",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "tSNE Dim1"
+          }
+        }
+      },
+      {
+        "column": "TSNE2",
+        "id": "tsne2",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/tsne2",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "tSNE Dim2"
+          }
+        }
+      },
+      {
+        "column": "TSNE3",
+        "id": "tsne3",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/tsne3",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "tSNE Dim3"
+          }
+        }
+      }
+      ],
+    "storageFormat": "Binary",
+    "partitionKeyLength": 1
+  }
+}
+
+export ll.toStrict({
+	getColumns: getColumns
+})

@@ -1,0 +1,46 @@
+{
+  "name": "@platforma-open/milaboratories.dimensionality-reduction",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rm -rf block-pack/* && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-open/milaboratories.dimensionality-reduction.workflow": "workspace:*",
+    "@platforma-open/milaboratories.dimensionality-reduction.model": "workspace:*",
+    "@platforma-open/milaboratories.dimensionality-reduction.ui": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@platforma-open/milaboratories.dimensionality-reduction.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@platforma-open/milaboratories.dimensionality-reduction.model/dist/model.json",
+      "ui": "@platforma-open/milaboratories.dimensionality-reduction.ui/dist"
+    },
+    "meta": {
+      "title": "Dimenstionality Reduction",
+      "logo": "file:../logos/block-logo.png",
+      "url": "https://github.com/milaboratory/platforma-dimensionality-reduction",
+      "docs": "https://github.com/milaboratory/platforma-dimensionality-reduction/docs",
+      "support": "mailto:support@milaboratories.com",
+      "description": "Takes single cell count matrix as input, performs dimensionality reduction using UMAP and tSNE methods.",
+      "longDescription": "file:../docs/description.md",
+      "changelog": "file:../CHANGELOG.md",
+      "tags": [
+        "RNA-seq",
+        "single-cell"        
+      ],
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:../logos/milaboratories.png"
+      }
+    }
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "catalog:"
+  },
+  "packageManager": "pnpm@9.12.0"
+}

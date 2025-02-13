@@ -1,0 +1,43 @@
+{
+  "name": "@platforma-open/milaboratories.dimensionality-reduction.software",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "pl-pkg build",
+    "prepublishOnly": "pl-pkg publish packages",
+    "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv platforma-open*.tgz package.tgz",
+    "changeset": "changeset",
+    "version-packages": "changeset version"
+  },
+  "files": [
+    "./dist/**/*"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@changesets/cli": "^2.27.11",
+    "@platforma-sdk/package-builder": "^2.15.0",
+    "@platforma-open/milaboratories.runenv-python-3": "^1.1.5"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "block-software": {
+    "entrypoints": {
+      "calculate-dimRed": {
+        "binary": {
+          "artifact": {
+            "type": "python",
+            "registry": "platforma-open",
+            "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.6",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "requirements.txt"
+            },
+            "root": "./src"
+          },
+          "cmd": [
+            "python",
+            "{pkg}/calculate_dim_reduction.py"
+          ]
+        }
+      }
+    }
+  }
+}
