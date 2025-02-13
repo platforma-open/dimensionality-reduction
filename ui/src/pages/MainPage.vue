@@ -30,6 +30,6 @@ const showSettings = () => { settingsAreShown.value = true }
       <PlDropdownRef v-model="app.model.args.countsRef" :options="app.model.outputs.countsOptions"
         label="Select dataset" />
     </PlSlideModal>
-    <GraphMaker chartType="scatterplot" :p-frame="app.model.outputs.UMAPPf" v-model="app.model.ui.graphState" />
+
   </PlBlockPage>
 </template>
