@@ -39,7 +39,7 @@ wf.body(func(args) {
 	UMAPPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", UMAPDimImportParams)
 
 	tSNEDimImportParams := pfTSNEConv.getColumns(blockId, inputSpec)
-	tSNEPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", tSNEDimImportParams)
+	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams)
 
 
 	return {

@@ -10,36 +10,51 @@ getColumns := func(blockId, inputSpec) {
       {
         "column": "CellId",
         "spec": inputSpec.axesSpec[1]
-      },
-      {
-        "column": "UMAP",
-        "id": "umapdim",
-        "allowNA": false,
-        "spec": {
-          "name": "pl7.app/rna-seq/umapdim",
-          "type": "String",
-          "domain": {
-            "pl7.app/blockId": blockId
-          },
-          "annotations": {
-            "pl7.app/label": "UMAP dimension"
-          }
-        }
       }
       ],
     "columns": [
       {
-        "column": "Value",
-        "id": "umapdimvalue",
+        "column": "UMAP1",
+        "id": "umap1",
         "allowNA": false,
         "spec": {
-          "name": "pl7.app/rna-seq/umapdimvalue",
+          "name": "pl7.app/rna-seq/umap1",
           "valueType": "Double",
           "domain": {
             "pl7.app/blockId": blockId
           },
           "annotations": {
-            "pl7.app/label": "UMAP value"
+            "pl7.app/label": "UMAP Dim1"
+          }
+        }
+      },
+      {
+        "column": "UMAP2",
+        "id": "umap2",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/umap2",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "UMAP Dim2"
+          }
+        }
+      },
+      {
+        "column": "UMAP3",
+        "id": "umap3",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/umap3",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "UMAP Dim3"
           }
         }
       }

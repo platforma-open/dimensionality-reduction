@@ -9,13 +9,13 @@ def load_and_process_data(file_path):
     raw_data_long = pd.read_csv(file_path)
 
     # Create a unique identifier for each cell
-    raw_data_long['UniqueCellId'] = raw_data_long['SampleId'] + '_' + raw_data_long['CellId']
+    raw_data_long['UniqueCellId'] = raw_data_long['Sample'] + '_' + raw_data_long['Cell Barcode']
 
     # Pivot the data to have genes as columns and UniqueCellId as rows
     raw_data = raw_data_long.pivot_table(
         index='UniqueCellId', 
-        columns='GeneId', 
-        values='Count', 
+        columns='Ensembl Id', 
+        values='Raw gene expression', 
         fill_value=0
     )
 
@@ -23,8 +23,8 @@ def load_and_process_data(file_path):
     adata = sc.AnnData(raw_data)
 
     # Add SampleId and CellId metadata
-    adata.obs['SampleId'] = [uid.split('_')[0] for uid in adata.obs_names]
-    adata.obs['CellId'] = [uid.split('_')[1] for uid in adata.obs_names]
+    adata.obs['Sample'] = [uid.split('_')[0] for uid in adata.obs_names]
+    adata.obs['Cell Barcode'] = [uid.split('_')[1] for uid in adata.obs_names]
 
     # Preprocessing steps: normalization, log transformation, and scaling
     sc.pp.normalize_total(adata, target_sum=1e4)
@@ -33,7 +33,7 @@ def load_and_process_data(file_path):
 
     return adata
 
-def reshape_and_save(adata, embedding, embedding_name, output_dir):
+def save_formatted_output(adata, embedding, embedding_name, output_dir):
     # Ensure embedding has exactly 3 dimensions
     if embedding.shape[1] < 3:
         padding = np.zeros((embedding.shape[0], 3 - embedding.shape[1]))
@@ -41,7 +41,7 @@ def reshape_and_save(adata, embedding, embedding_name, output_dir):
     elif embedding.shape[1] > 3:
         embedding = embedding[:, :3]
 
-    # Reshape the embedding data into long format
+    # Create DataFrame with the correct format
     embedding_df = pd.DataFrame(
         embedding,
         index=adata.obs_names,
@@ -51,16 +51,12 @@ def reshape_and_save(adata, embedding, embedding_name, output_dir):
     embedding_df['SampleId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_')[0])
     embedding_df['CellId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_')[1])
 
-    # Melt the DataFrame to long format
-    long_format_df = embedding_df.melt(
-        id_vars=['UniqueCellId', 'SampleId', 'CellId'],
-        var_name=embedding_name,
-        value_name='Value'
-    )
+    # Reorder columns
+    embedding_df = embedding_df[['UniqueCellId', 'SampleId', 'CellId', f'{embedding_name}1', f'{embedding_name}2', f'{embedding_name}3']]
 
     # Save to CSV
     output_path = os.path.join(output_dir, f'{embedding_name.lower()}_results.csv')
-    long_format_df.to_csv(output_path, index=False)
+    embedding_df.to_csv(output_path, index=False)
 
 def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     # Ensure output directory exists
@@ -77,7 +73,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     # Run t-SNE with adaptive parameters
     sc.tl.tsne(adata, n_pcs=n_pcs, perplexity=perplexity, early_exaggeration=12.0, learning_rate=learning_rate)
     tsne_results = adata.obsm['X_tsne']
-    reshape_and_save(adata, tsne_results, 'TSNE', output_dir)
+    save_formatted_output(adata, tsne_results, 'TSNE', output_dir)
 
     # Adaptive UMAP parameters
     if n_cells < 1000:
@@ -93,7 +89,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     sc.pp.neighbors(adata, n_neighbors=umap_n_neighbors, n_pcs=n_pcs)
     sc.tl.umap(adata, n_components=3, min_dist=min_dist, spread=spread)
     umap_results = adata.obsm['X_umap']
-    reshape_and_save(adata, umap_results, 'UMAP', output_dir)
+    save_formatted_output(adata, umap_results, 'UMAP', output_dir)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process counts in long format and perform dimensionality reduction.')

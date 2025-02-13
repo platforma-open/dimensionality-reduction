@@ -10,36 +10,51 @@ getColumns := func(blockId, inputSpec) {
       {
         "column": "CellId",
         "spec": inputSpec.axesSpec[1]
-      },
-      {
-        "column": "TSNE",
-        "id": "tsnedim",
-        "allowNA": false,
-        "spec": {
-          "name": "pl7.app/rna-seq/tsnedim",
-          "type": "String",
-          "domain": {
-            "pl7.app/blockId": blockId
-          },
-          "annotations": {
-            "pl7.app/label": "tSNE dimension"
-          }
-        }
       }
       ],
     "columns": [
       {
-        "column": "Value",
-        "id": "tsnedimvalue",
+        "column": "TSNE1",
+        "id": "tsne1",
         "allowNA": false,
         "spec": {
-          "name": "pl7.app/rna-seq/tsnedimvalue",
+          "name": "pl7.app/rna-seq/tsne1",
           "valueType": "Double",
           "domain": {
             "pl7.app/blockId": blockId
           },
           "annotations": {
-            "pl7.app/label": "tSNE value"
+            "pl7.app/label": "tSNE Dim1"
+          }
+        }
+      },
+      {
+        "column": "TSNE2",
+        "id": "tsne2",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/tsne2",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "tSNE Dim2"
+          }
+        }
+      },
+      {
+        "column": "TSNE3",
+        "id": "tsne3",
+        "allowNA": false,
+        "spec": {
+          "name": "pl7.app/rna-seq/tsne3",
+          "valueType": "Double",
+          "domain": {
+            "pl7.app/blockId": blockId
+          },
+          "annotations": {
+            "pl7.app/label": "tSNE Dim3"
           }
         }
       }
