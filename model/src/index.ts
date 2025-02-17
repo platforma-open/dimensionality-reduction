@@ -1,5 +1,4 @@
 import { GraphMakerState } from '@milaboratories/graph-maker';
-import { SCATTERPLOT_TEMPLATES_MAP } from '@milaboratories/graph-maker/dist/GraphMaker/constant';
 import {
   BlockModel,
   createPlDataTable,
