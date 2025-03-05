@@ -3,6 +3,7 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 assets:= import("@platforma-sdk/workflow-tengo:assets")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
+pSpec := import("@platforma-sdk/workflow-tengo:pframes.spec")
 
 pfUMAPConv := import(":pf-umap-conv")
 pfTSNEConv := import(":pf-tsne-conv")
@@ -42,12 +43,57 @@ wf.body(func(args) {
 	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams)
 
 
+
+	// Prepare PFrames for export
+	UMAPPf2 := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", UMAPDimImportParams, 
+															// This changes output format from default to per column
+															// So key will be column name and values spec and data
+															{splitDataAndSpec: true})
+	tSNEPf2 := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams, 
+															{splitDataAndSpec: true})
+
+	UMAPPFrameBuilder := pframes.pFrameBuilder()
+	tSNEPFrameBuilder := pframes.pFrameBuilder()
+
+	trace := pSpec.makeTrace(inputSpec,
+			{type: "milaboratories.dimensionality-reduction", id: blockId, importance: 30, 
+			label: "Dimensionality reduction"}
+		)
+
+	for columnName, value in UMAPPf2 { 
+			columnSpec := value.spec
+			columnData := value.data
+			UMAPPFrameBuilder.add(
+				columnName,
+				trace.inject(columnSpec),
+				columnData
+
+			)
+		}
+
+	for columnName, value in tSNEPf2 { 
+			columnSpec := value.spec
+			columnData := value.data
+			tSNEPFrameBuilder.add(
+				columnName,
+				trace.inject(columnSpec),
+				columnData
+
+			)
+		}
+
+	UMAPPFexport := UMAPPFrameBuilder.build()
+	tSNEPFexport := tSNEPFrameBuilder.build()
+
 	return {
 		outputs: {
 			UMAPPf: pframes.exportFrame(UMAPPf),
 			tSNEPf: pframes.exportFrame(tSNEPf)
 		},
-		exports: {}
+		exports: {
+			UMAPPf: UMAPPFexport,
+			tSNEPf: tSNEPFexport
+		}
 	}
 })
 
