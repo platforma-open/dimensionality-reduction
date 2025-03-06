@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.2.0
+
+### Minor Changes
+
+- 5c88156: Include exports
+
 ## 1.1.0
 
 ### Minor Changes
