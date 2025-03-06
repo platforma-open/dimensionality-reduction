@@ -53,10 +53,10 @@ wf.body(func(args) {
             spec: UMAPPf["umap2.spec"],
             data: UMAPPf["umap2.data"]
             },
-		UMAP3: {
-            spec: UMAPPf["umap3.spec"],
-            data: UMAPPf["umap3.data"]
-            },
+		// UMAP3: {
+        //     spec: UMAPPf["umap3.spec"],
+        //     data: UMAPPf["umap3.data"]
+        //     },
         tSNE1 : {
             spec: tSNEPf["tsne1.spec"],
             data: tSNEPf["tsne1.data"]
@@ -64,11 +64,11 @@ wf.body(func(args) {
 		tSNE2 : {
             spec: tSNEPf["tsne2.spec"],
             data: tSNEPf["tsne2.data"]
-            },
-		tSNE3 : {
-            spec: tSNEPf["tsne3.spec"],
-            data: tSNEPf["tsne3.data"]
             }
+		// tSNE3 : {
+        //     spec: tSNEPf["tsne3.spec"],
+        //     data: tSNEPf["tsne3.data"]
+        //     }
     }
 
 	return {

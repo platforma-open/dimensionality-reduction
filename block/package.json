@@ -25,8 +25,8 @@
     "meta": {
       "title": "Dimenstionality Reduction",
       "logo": "file:../logos/block-logo.png",
-      "url": "https://github.com/milaboratory/platforma-dimensionality-reduction",
-      "docs": "https://github.com/milaboratory/platforma-dimensionality-reduction/docs",
+      "url": "https://github.com/platforma-open/dimensionality-reduction",
+      "docs": "https://github.com/platforma-open/dimensionality-reduction/docs",
       "support": "mailto:support@milaboratories.com",
       "description": "Takes single cell count matrix as input, performs dimensionality reduction using UMAP and tSNE methods.",
       "longDescription": "file:../docs/description.md",
@@ -38,7 +38,7 @@
       "organization": {
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/",
-        "logo": "file:../logos/milaboratories.png"
+        "logo": "file:../logos/organization-logo.png"
       }
     }
   },
