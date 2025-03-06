@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import '@milaboratories/graph-maker/styles';
-import { PlBlockPage, PlBtnGhost, PlDropdownRef, PlMaskIcon24, PlSlideModal } from '@platforma-sdk/ui-vue';
+import { PlBlockPage } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 
-import { GraphMaker, GraphMakerProps } from '@milaboratories/graph-maker';
+import type { GraphMakerProps } from '@milaboratories/graph-maker';
+import { GraphMaker } from '@milaboratories/graph-maker';
 
 const app = useApp();
 
@@ -51,6 +52,6 @@ const defaultOptions: GraphMakerProps['defaultOptions'] = [
 <template>
   <PlBlockPage>
     <template #title>Dimensionality Reduction</template>
-    <GraphMaker chartType="scatterplot-umap" :p-frame="app.model.outputs.UMAPPf" v-model="app.model.ui.graphStateUMAP" :default-options="defaultOptions" />
+    <GraphMaker v-model="app.model.ui.graphStateUMAP" chartType="scatterplot-umap" :p-frame="app.model.outputs.UMAPPf" :default-options="defaultOptions" />
   </PlBlockPage>
 </template>

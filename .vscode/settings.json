@@ -15,16 +15,21 @@
         "**/vite.config.ts": true,
         "**/workflow/dev": true
     },
-    "vitest.disableWorkspaceWarning": true,
-    "prettier.singleAttributePerLine": true,
-    "vue.format.wrapAttributes": "force-expand-multiline",
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
     "[vue]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
     },
     "cSpell.words": [
         "datasource",
         "pframe",
-        "prerun",
-    ]
+        "prerun"
+    ],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "always"
+    },
+    "eslint.enable": true,
+    "eslint.format.enable": true
 }

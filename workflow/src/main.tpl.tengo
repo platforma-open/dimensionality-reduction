@@ -3,6 +3,7 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 assets:= import("@platforma-sdk/workflow-tengo:assets")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
+pSpec := import("@platforma-sdk/workflow-tengo:pframes.spec")
 
 pfUMAPConv := import(":pf-umap-conv")
 pfTSNEConv := import(":pf-tsne-conv")
@@ -41,13 +42,41 @@ wf.body(func(args) {
 	tSNEDimImportParams := pfTSNEConv.getColumns(blockId, inputSpec)
 	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams)
 
+	// Prepare exports
+	// @TODO to be updated exporting Pframe directly
+	exports := {
+        UMAP1: {
+            spec: UMAPPf["umap1.spec"],
+            data: UMAPPf["umap1.data"]
+            },
+		UMAP2: {
+            spec: UMAPPf["umap2.spec"],
+            data: UMAPPf["umap2.data"]
+            },
+		// UMAP3: {
+        //     spec: UMAPPf["umap3.spec"],
+        //     data: UMAPPf["umap3.data"]
+        //     },
+        tSNE1 : {
+            spec: tSNEPf["tsne1.spec"],
+            data: tSNEPf["tsne1.data"]
+            },
+		tSNE2 : {
+            spec: tSNEPf["tsne2.spec"],
+            data: tSNEPf["tsne2.data"]
+            }
+		// tSNE3 : {
+        //     spec: tSNEPf["tsne3.spec"],
+        //     data: tSNEPf["tsne3.data"]
+        //     }
+    }
 
 	return {
 		outputs: {
 			UMAPPf: pframes.exportFrame(UMAPPf),
 			tSNEPf: pframes.exportFrame(tSNEPf)
 		},
-		exports: {}
+		exports: exports
 	}
 })
 
