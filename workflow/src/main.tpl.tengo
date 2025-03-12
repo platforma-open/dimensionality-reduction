@@ -34,7 +34,7 @@ wf.body(func(args) {
 		arg("--n_neighbors").arg(string(nNeighbors)).
 		saveFile("umap_results.csv").
 		saveFile("tsne_results.csv").
-		// saveFile("pca_results.csv").
+		saveFile("pca_results.csv").
 		printErrStreamToStdout().
 		saveStdoutContent().
 		cache(24 * 60 * 60 * 1000).
@@ -46,8 +46,8 @@ wf.body(func(args) {
 	tSNEDimImportParams := pfTSNEConv.getColumns(blockId, inputSpec)
 	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams)
 
-	// PCADimImportParams := pfPCAConv.getColumns(blockId, inputSpec)
-	// PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams)
+	PCADimImportParams := pfPCAConv.getColumns(blockId, inputSpec)
+	PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams)
 
 	// Prepare exports
 	// @TODO to be updated exporting Pframe directly
@@ -71,15 +71,15 @@ wf.body(func(args) {
 		tSNE2 : {
             spec: tSNEPf["tsne2.spec"],
             data: tSNEPf["tsne2.data"]
-            }
+            },
 		// tSNE3 : {
         //     spec: tSNEPf["tsne3.spec"],
         //     data: tSNEPf["tsne3.data"]
         //     },
-		// PCembeddings: {
-		// 	spec: PCAPf["pcvalue.spec"],
-		// 	data: PCAPf["pcvalue.data"]
-		// }
+		PCembeddings: {
+		 	spec: PCAPf["pcvalue.spec"],
+			data: PCAPf["pcvalue.data"]
+		 	}
     }
 
 	return {
