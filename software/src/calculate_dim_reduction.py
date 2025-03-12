@@ -33,6 +33,37 @@ def load_and_process_data(file_path):
 
     return adata
 
+def save_pca(adata, output_dir):
+    """Saves PCA results in long format: UniqueCellId, SampleId, CellId, PC, value"""
+    # Get PCA matrix and cell names
+    pca_matrix = adata.obsm['X_pca']
+    cell_ids = adata.obs_names
+
+    # Convert to DataFrame and rename index
+    pca_df = pd.DataFrame(pca_matrix, index=cell_ids)
+    pca_df.index.name = 'UniqueCellId'  # Ensure the index has a name
+
+    # Reset index before melting
+    pca_df = pca_df.reset_index()
+
+    # Melt into long format
+    pca_df = pca_df.melt(id_vars=['UniqueCellId'], var_name='PC', value_name='value')
+
+    # Extract SampleId and CellId from UniqueCellId
+    pca_df['SampleId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_')[0])
+    pca_df['CellId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_')[1])
+
+    # Convert PC column to proper naming (e.g., "PC1", "PC2", etc.)
+    pca_df['PC'] = pca_df['PC'].astype(int) + 1  # Convert to integer and shift index
+    pca_df['PC'] = pca_df['PC'].apply(lambda x: f'PC{x}')
+
+    # Adjust column order to match other outputs
+    pca_df = pca_df[['UniqueCellId', 'SampleId', 'CellId', 'PC', 'value']]
+
+    # Save to CSV
+    pca_df.to_csv(os.path.join(output_dir, "pca_results.csv"), index=False)
+
+
 def save_formatted_output(adata, embedding, embedding_name, output_dir):
     # Ensure embedding has exactly 3 dimensions
     if embedding.shape[1] < 3:
@@ -64,6 +95,9 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
 
     # Run PCA
     sc.tl.pca(adata, n_comps=n_pcs)
+
+    # Save PCA results in the required long format
+    save_pca(adata, output_dir)
 
     # Adaptive t-SNE parameters
     n_cells = adata.n_obs
