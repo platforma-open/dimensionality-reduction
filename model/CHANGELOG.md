@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.3.0
+
+### Minor Changes
+
+- 8aeec7f: Compatibility with Leiden Clustering
+
 ## 1.2.0
 
 ### Minor Changes
