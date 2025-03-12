@@ -7,7 +7,7 @@ pSpec := import("@platforma-sdk/workflow-tengo:pframes.spec")
 
 pfUMAPConv := import(":pf-umap-conv")
 pfTSNEConv := import(":pf-tsne-conv")
-
+pfPCAConv := import(":pf-pca-conv")
 wf.prepare(func(args){
 	return {
 		resolvedInput: wf.resolve(args.countsRef, { errIfMissing: true })
@@ -20,6 +20,9 @@ wf.body(func(args) {
 	rawCounts := args.resolvedInput
 	inputSpec := rawCounts.spec
 
+	nPCs := args.nPCs
+	nNeighbors := args.nNeighbors
+
 	csvCounts := xsv.exportFrame([rawCounts], "csv", {})
 
 	dimReduction := exec.builder().
@@ -27,10 +30,11 @@ wf.body(func(args) {
 		addFile("rawCounts.csv", csvCounts).
 		arg("--file_path").arg("rawCounts.csv").
 		arg("--output_dir").arg(".").
-		// arg("--n_pcs").arg(nPC).
-		// arg("--n_neighbors").arg(nNeighbors).
+		arg("--n_pcs").arg(string(nPCs)).
+		arg("--n_neighbors").arg(string(nNeighbors)).
 		saveFile("umap_results.csv").
 		saveFile("tsne_results.csv").
+		// saveFile("pca_results.csv").
 		printErrStreamToStdout().
 		saveStdoutContent().
 		cache(24 * 60 * 60 * 1000).
@@ -41,6 +45,9 @@ wf.body(func(args) {
 
 	tSNEDimImportParams := pfTSNEConv.getColumns(blockId, inputSpec)
 	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams)
+
+	// PCADimImportParams := pfPCAConv.getColumns(blockId, inputSpec)
+	// PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams)
 
 	// Prepare exports
 	// @TODO to be updated exporting Pframe directly
@@ -53,10 +60,10 @@ wf.body(func(args) {
             spec: UMAPPf["umap2.spec"],
             data: UMAPPf["umap2.data"]
             },
-		// UMAP3: {
-        //     spec: UMAPPf["umap3.spec"],
-        //     data: UMAPPf["umap3.data"]
-        //     },
+		UMAP3: {
+            spec: UMAPPf["umap3.spec"],
+            data: UMAPPf["umap3.data"]
+            },
         tSNE1 : {
             spec: tSNEPf["tsne1.spec"],
             data: tSNEPf["tsne1.data"]
@@ -68,7 +75,11 @@ wf.body(func(args) {
 		// tSNE3 : {
         //     spec: tSNEPf["tsne3.spec"],
         //     data: tSNEPf["tsne3.data"]
-        //     }
+        //     },
+		// PCembeddings: {
+		// 	spec: PCAPf["pcvalue.spec"],
+		// 	data: PCAPf["pcvalue.data"]
+		// }
     }
 
 	return {

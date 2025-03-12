@@ -5,10 +5,8 @@ import type {
   PlRef } from '@platforma-sdk/model';
 import {
   BlockModel,
-  createPlDataTable,
   isPColumn,
   isPColumnSpec,
-  PlDataTableState,
 } from '@platforma-sdk/model';
 
 export type UiState = {
@@ -16,23 +14,17 @@ export type UiState = {
   graphStateTSNE: GraphMakerState;
 };
 
-// export type Formula = {
-//   // we put formula label in the arg as it will be used
-//   // in the annotations to re-use in the downstream blocks
-//   label: string;
-//   covariateRefs: PlRef[];
-//   contrastFactor?: PlRef;
-//   denominator?: String;
-//   numerator?: String;
-// };
-
 export type BlockArgs = {
   countsRef?: PlRef;
+  nPCs: number;
+  nNeighbors: number;
 };
 
 export const model = BlockModel.create()
 
   .withArgs<BlockArgs>({
+    nPCs: 50,
+    nNeighbors: 15,
   })
 
   .withUiState<UiState>({
