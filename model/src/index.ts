@@ -45,6 +45,14 @@ export const model = BlockModel.create()
     , { includeNativeLabel: true, addLabelAsSuffix: true }),
   )
 
+  .output('dimReductionLog', (wf) => {
+    const logHandle = wf.outputs?.resolve('dimReductionLog');
+    if (logHandle === undefined) {
+      return undefined;
+    }
+    return logHandle.getLogHandle();
+  })
+
   .output('UMAPPf', (ctx): PFrameHandle | undefined => {
     const pCols = ctx.outputs?.resolve('UMAPPf')?.getPColumns();
     if (pCols === undefined) {
@@ -76,6 +84,8 @@ export const model = BlockModel.create()
 
     return ctx.createPFrame([...pCols, ...upstream]);
   })
+
+  .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
   .sections((_ctx) => ([
     { type: 'link', href: '/', label: 'Main' },

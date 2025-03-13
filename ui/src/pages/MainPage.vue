@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@milaboratories/graph-maker/styles';
-import { PlAccordionSection, PlAlert, PlBlockPage, PlBtnGhost, PlDropdownRef, PlMaskIcon24, PlNumberField, PlRow, PlSlideModal } from '@platforma-sdk/ui-vue';
+import { PlAccordionSection, PlAlert, PlBlockPage, PlBtnGhost, PlDropdownRef, PlLogView, PlMaskIcon24, PlNumberField, PlRow, PlSlideModal } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import { ref } from 'vue';
 
@@ -25,6 +25,7 @@ const showSettings = () => {
         </template>
       </PlBtnGhost>
     </template>
+    <PlLogView :log-handle="app.model.outputs.dimReductionLog" label="Log"/>
 
     <PlSlideModal v-model="settingsAreShown">
       <template #title>Settings</template>
