@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.software
 
+## 1.4.0
+
+### Minor Changes
+
+- a26208b: Updated UI
+
 ## 1.3.0
 
 ### Minor Changes
