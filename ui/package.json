@@ -13,6 +13,7 @@
     "@platforma-open/milaboratories.dimensionality-reduction.model": "workspace:*",
     "@platforma-sdk/ui-vue": "catalog:",
     "@milaboratories/graph-maker": "catalog:",
+    "@platforma-sdk/model": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {

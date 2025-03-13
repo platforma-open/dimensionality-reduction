@@ -1,12 +1,38 @@
+import warnings
+import sys
+
+# Remove all existing warning filters
+warnings.resetwarnings()
+
+# Force Python to ignore FutureWarnings globally
+warnings.simplefilter("ignore", category=FutureWarning)
+
+# Ensure all warnings are ignored, even if a library resets them
+if not sys.warnoptions:
+    import os
+    os.environ["PYTHONWARNINGS"] = "ignore::FutureWarning"
+
+
 import pandas as pd
 import scanpy as sc
 import argparse
 import os
 import numpy as np
+import time
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+def log_message(message, status="INFO"):
+    """Logs messages in a structured format."""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] [{status}] {message}")
 
 def load_and_process_data(file_path):
+    log_message("Starting data loading and preprocessing", "STEP")
     # Load the data from the CSV file
     raw_data_long = pd.read_csv(file_path)
+    log_message(f"Loaded data from {file_path}, shape: {raw_data_long.shape}")
 
     # Create a unique identifier for each cell
     raw_data_long['UniqueCellId'] = raw_data_long['Sample'] + '_' + raw_data_long['Cell Barcode']
@@ -27,15 +53,18 @@ def load_and_process_data(file_path):
     adata.obs['Cell Barcode'] = [uid.split('_')[1] for uid in adata.obs_names]
 
     # Preprocessing steps: normalization, log transformation, and scaling
+    log_message("Starting data normalization and transformation", "STEP")
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
     sc.pp.scale(adata, max_value=10)
+    log_message("Normalization and normalization completed", "DONE")
 
     return adata
 
 def save_pca(adata, output_dir):
     """Saves PCA results in long format: UniqueCellId, SampleId, CellId, PC, value"""
     # Get PCA matrix and cell names
+    log_message("Saving PCA results", "STEP")
     pca_matrix = adata.obsm['X_pca']
     cell_ids = adata.obs_names
 
@@ -62,10 +91,12 @@ def save_pca(adata, output_dir):
 
     # Save to CSV
     pca_df.to_csv(os.path.join(output_dir, "pca_results.csv"), index=False)
+    log_message("PCA results saved", "DONE")
 
 
 def save_formatted_output(adata, embedding, embedding_name, output_dir):
     # Ensure embedding has exactly 3 dimensions
+    log_message(f"Saving {embedding_name} results", "STEP")
     if embedding.shape[1] < 3:
         padding = np.zeros((embedding.shape[0], 3 - embedding.shape[1]))
         embedding = np.hstack((embedding, padding))
@@ -88,18 +119,21 @@ def save_formatted_output(adata, embedding, embedding_name, output_dir):
     # Save to CSV
     output_path = os.path.join(output_dir, f'{embedding_name.lower()}_results.csv')
     embedding_df.to_csv(output_path, index=False)
+    log_message(f"{embedding_name} results saved", "DONE")
 
 def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
     # Run PCA
+    log_message("Running PCA", "STEP")
     sc.tl.pca(adata, n_comps=n_pcs)
 
     # Save PCA results in the required long format
     save_pca(adata, output_dir)
 
     # Adaptive t-SNE parameters
+    log_message("Running t-SNE", "STEP")
     n_cells = adata.n_obs
     perplexity = min(30, max(5, (n_cells - 1) // 3))  # Adjust perplexity
     learning_rate = max(50, min(200, n_cells / 12))   # Adaptive learning rate
@@ -110,6 +144,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     save_formatted_output(adata, tsne_results, 'TSNE', output_dir)
 
     # Adaptive UMAP parameters
+    log_message("Running UMAP", "STEP")
     if n_cells < 1000:
         umap_n_neighbors = max(5, n_neighbors // 2)  # More local structure
         min_dist = 0.01
@@ -124,6 +159,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     sc.tl.umap(adata, n_components=3, min_dist=min_dist, spread=spread)
     umap_results = adata.obsm['X_umap']
     save_formatted_output(adata, umap_results, 'UMAP', output_dir)
+    log_message("Dimensionality reduction completed", "DONE")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process counts in long format and perform dimensionality reduction.')
@@ -134,9 +170,11 @@ def parse_arguments():
     return parser.parse_args()
 
 def main():
+    log_message("Starting block execution", "INFO")
     args = parse_arguments()
     adata = load_and_process_data(args.file_path)
     run_dimensionality_reduction(adata, args.output_dir, args.n_pcs, args.n_neighbors)
+    log_message("Block execution finished", "INFO")
 
 if __name__ == '__main__':
     main()
