@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction
 
+## 1.1.5
+
+### Patch Changes
+
+- 5e3efa7: Updated tags and ranking
+
 ## 1.1.4
 
 ### Patch Changes
