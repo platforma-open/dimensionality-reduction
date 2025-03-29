@@ -3,6 +3,8 @@ import '@milaboratories/graph-maker/styles';
 import { PlAccordionSection, PlAlert, PlBlockPage, PlBtnGhost, PlDropdownRef, PlLogView, PlMaskIcon24, PlNumberField, PlRow, PlSlideModal } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import { ref } from 'vue';
+import { plRefsEqual } from '@platforma-sdk/model';
+import type { PlRef } from '@platforma-sdk/model';
 
 const app = useApp();
 
@@ -11,6 +13,14 @@ const settingsAreShown = ref(true);
 const showSettings = () => {
   settingsAreShown.value = true;
 };
+
+function setInput(inputRef?: PlRef) {
+  app.model.args.countsRef = inputRef;
+  if (inputRef)
+    app.model.args.title = app.model.outputs.countsOptions?.find((o) => plRefsEqual(o.ref, inputRef))?.label;
+  else
+    app.model.args.title = undefined;
+}
 
 </script>
 
@@ -32,6 +42,7 @@ const showSettings = () => {
       <PlDropdownRef
         v-model="app.model.args.countsRef" :options="app.model.outputs.countsOptions"
         label="Select dataset"
+        clearable @update:model-value="setInput"
       />
       <!-- Content hidden until you click ADVANCED SETTINGS -->
       <PlAccordionSection label="ADVANCED SETTINGS">

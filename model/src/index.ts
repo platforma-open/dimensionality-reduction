@@ -18,6 +18,7 @@ export type BlockArgs = {
   countsRef?: PlRef;
   nPCs: number;
   nNeighbors: number;
+  title?: string;
 };
 
 export const model = BlockModel.create()
@@ -31,10 +32,20 @@ export const model = BlockModel.create()
     graphStateUMAP: {
       title: 'UMAP',
       template: 'dots',
+      layersSettings: {
+        dots: {
+          dotFill: '#99E099',
+        },
+      },
     },
     graphStateTSNE: {
       title: 'tSNE',
       template: 'dots',
+      layersSettings: {
+        dots: {
+          dotFill: '#99E099',
+        },
+      },
     },
   })
 
@@ -92,6 +103,12 @@ export const model = BlockModel.create()
     { type: 'link', href: '/umap', label: 'UMAP' },
     { type: 'link', href: '/tsne', label: 'tSNE' },
   ]))
+
+  .title((ctx) =>
+    ctx.args.title
+      ? `Dimensionality Reduction - ${ctx.args.title}`
+      : 'Dimensionality Reduction',
+  )
 
   .done();
 
