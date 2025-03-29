@@ -2,17 +2,17 @@
 import '@milaboratories/graph-maker/styles';
 import { PlAccordionSection, PlAlert, PlBlockPage, PlBtnGhost, PlDropdownRef, PlLogView, PlMaskIcon24, PlNumberField, PlRow, PlSlideModal } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
-import { ref } from 'vue';
+import { reactive } from 'vue';
 import { plRefsEqual } from '@platforma-sdk/model';
 import type { PlRef } from '@platforma-sdk/model';
 
 const app = useApp();
 
-// const settingsAreShown = ref(app.model.outputs.UMAPPf === undefined)
-const settingsAreShown = ref(true);
-const showSettings = () => {
-  settingsAreShown.value = true;
-};
+const data = reactive<{
+  settingsOpen: boolean;
+}>({
+  settingsOpen: app.model.args.countsRef === undefined,
+});
 
 function setInput(inputRef?: PlRef) {
   app.model.args.countsRef = inputRef;
@@ -28,7 +28,7 @@ function setInput(inputRef?: PlRef) {
   <PlBlockPage>
     <template #title>Dimensionality Reduction</template>
     <template #append>
-      <PlBtnGhost @click.stop="showSettings">
+      <PlBtnGhost @click.stop="() => data.settingsOpen = true">
         Settings
         <template #append>
           <PlMaskIcon24 name="settings" />
@@ -37,7 +37,7 @@ function setInput(inputRef?: PlRef) {
     </template>
     <PlLogView :log-handle="app.model.outputs.dimReductionLog" label="Log"/>
 
-    <PlSlideModal v-model="settingsAreShown">
+    <PlSlideModal v-model="data.settingsOpen">
       <template #title>Settings</template>
       <PlDropdownRef
         v-model="app.model.args.countsRef" :options="app.model.outputs.countsOptions"
