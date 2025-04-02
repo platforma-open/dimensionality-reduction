@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.dimensionality-reduction.ui
 
+## 1.5.0
+
+### Minor Changes
+
+- 7aa1003: Improved visualization
+
+### Patch Changes
+
+- Updated dependencies [7aa1003]
+  - @platforma-open/milaboratories.dimensionality-reduction.model@1.5.0
+
 ## 1.4.2
 
 ### Patch Changes
