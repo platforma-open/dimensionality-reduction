@@ -50,7 +50,6 @@ export const model = BlockModel.create()
   })
 
   .output('countsOptions', (ctx) =>
-    // I've added these "||" for backward compatibility (As I see, the shape of PColum was changed)
     ctx.resultPool.getOptions((spec) => isPColumnSpec(spec)
       && spec.name === 'pl7.app/rna-seq/countMatrix' && spec.domain?.['pl7.app/rna-seq/normalized'] === 'false'
     , { includeNativeLabel: true, addLabelAsSuffix: true }),
