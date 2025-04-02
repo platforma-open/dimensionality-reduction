@@ -18,6 +18,7 @@ export type BlockArgs = {
   countsRef?: PlRef;
   nPCs: number;
   nNeighbors: number;
+  title?: string;
 };
 
 export const model = BlockModel.create()
@@ -31,15 +32,24 @@ export const model = BlockModel.create()
     graphStateUMAP: {
       title: 'UMAP',
       template: 'dots',
+      layersSettings: {
+        dots: {
+          dotFill: '#99E099',
+        },
+      },
     },
     graphStateTSNE: {
       title: 'tSNE',
       template: 'dots',
+      layersSettings: {
+        dots: {
+          dotFill: '#99E099',
+        },
+      },
     },
   })
 
   .output('countsOptions', (ctx) =>
-    // I've added these "||" for backward compatibility (As I see, the shape of PColum was changed)
     ctx.resultPool.getOptions((spec) => isPColumnSpec(spec)
       && spec.name === 'pl7.app/rna-seq/countMatrix' && spec.domain?.['pl7.app/rna-seq/normalized'] === 'false'
     , { includeNativeLabel: true, addLabelAsSuffix: true }),
@@ -92,6 +102,12 @@ export const model = BlockModel.create()
     { type: 'link', href: '/umap', label: 'UMAP' },
     { type: 'link', href: '/tsne', label: 'tSNE' },
   ]))
+
+  .title((ctx) =>
+    ctx.args.title
+      ? `Dimensionality Reduction - ${ctx.args.title}`
+      : 'Dimensionality Reduction',
+  )
 
   .done();
 

@@ -52,7 +52,6 @@ wf.body(func(args) {
 	dimReductionLog := dimReduction.getStdoutStream()
 
 	// Prepare exports
-	// @TODO to be updated exporting Pframe directly
 	exports := {
         UMAP1: {
             spec: UMAPPf["umap1.spec"],
