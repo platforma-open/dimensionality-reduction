@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.5.1
+
+### Patch Changes
+
+- 9bd00b4: Updated block export specifications
+
 ## 1.5.0
 
 ### Minor Changes
