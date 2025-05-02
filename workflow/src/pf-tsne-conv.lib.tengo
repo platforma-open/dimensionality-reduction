@@ -21,7 +21,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/tsne1",
           "valueType": "Double",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "tSNE Dim1"
@@ -36,7 +37,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/tsne2",
           "valueType": "Double",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "tSNE Dim2"
@@ -51,7 +53,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/tsne3",
           "valueType": "Double",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "tSNE Dim3"
