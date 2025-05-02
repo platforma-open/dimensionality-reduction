@@ -19,7 +19,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/pc-num",
           "type": "String",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "Principal Component Number"
@@ -36,7 +37,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/pcvalue",
           "valueType": "Double",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "Principal Component Value"

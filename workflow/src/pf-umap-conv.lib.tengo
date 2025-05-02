@@ -21,7 +21,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/umap1",
           "valueType": "Double",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "UMAP Dim1"
@@ -36,7 +37,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/umap2",
           "valueType": "Double",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "UMAP Dim2"
@@ -51,7 +53,8 @@ getColumns := func(blockId, inputSpec) {
           "name": "pl7.app/rna-seq/umap3",
           "valueType": "Double",
           "domain": {
-            "pl7.app/blockId": blockId
+            "pl7.app/blockId": blockId,
+            "pl7.app/rna-seq/batch-corrected": "false"
           },
           "annotations": {
             "pl7.app/label": "UMAP Dim3"
