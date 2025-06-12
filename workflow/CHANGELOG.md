@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.6.0
+
+### Minor Changes
+
+- fbe1af4: chore: update deps
+
 ## 1.5.1
 
 ### Patch Changes
