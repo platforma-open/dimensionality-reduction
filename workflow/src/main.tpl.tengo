@@ -41,55 +41,53 @@ wf.body(func(args) {
 		run()
 
 	UMAPDimImportParams := pfUMAPConv.getColumns(blockId, inputSpec)
-	UMAPPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", UMAPDimImportParams)
+	UMAPPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", UMAPDimImportParams, {splitDataAndSpec: true})
 
 	tSNEDimImportParams := pfTSNEConv.getColumns(blockId, inputSpec)
-	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams)
+	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams, {splitDataAndSpec: true})
 
 	PCADimImportParams := pfPCAConv.getColumns(blockId, inputSpec)
-	PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams)
+	PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams, {splitDataAndSpec: true})
 
-	dimReductionLog := dimReduction.getStdoutStream()
+	trace := pSpec.makeTrace(inputSpec,
+		{type: "milaboratories.dimensionality-reduction", id: blockId, importance: 30, label: "Dimensionality Reduction - "}
+	)
 
-	// Prepare exports
-	exports := {
-        UMAP1: {
-            spec: UMAPPf["umap1.spec"],
-            data: UMAPPf["umap1.data"]
-            },
-		UMAP2: {
-            spec: UMAPPf["umap2.spec"],
-            data: UMAPPf["umap2.data"]
-            },
-		UMAP3: {
-            spec: UMAPPf["umap3.spec"],
-            data: UMAPPf["umap3.data"]
-            },
-        tSNE1 : {
-            spec: tSNEPf["tsne1.spec"],
-            data: tSNEPf["tsne1.data"]
-            },
-		tSNE2 : {
-            spec: tSNEPf["tsne2.spec"],
-            data: tSNEPf["tsne2.data"]
-            },
-		// tSNE3 : {
-        //     spec: tSNEPf["tsne3.spec"],
-        //     data: tSNEPf["tsne3.data"]
-        //     },
-		PCembeddings: {
-		 	spec: PCAPf["pcvalue.spec"],
-			data: PCAPf["pcvalue.data"]
-		 	}
-    }
+	// Build UMAP pFrame for outputs
+	umapOutputPf := pframes.pFrameBuilder()
+	for k, v in UMAPPf {
+		umapOutputPf.add(k, trace.inject(v.spec), v.data)
+	}
+	umapOutputPf = umapOutputPf.build()
+
+	// Build tSNE pFrame for outputs
+	tsneOutputPf := pframes.pFrameBuilder()
+	for k, v in tSNEPf {
+		tsneOutputPf.add(k, trace.inject(v.spec), v.data)
+	}
+	tsneOutputPf = tsneOutputPf.build()
+
+	// Build combined exports pFrame
+	exportsPf := pframes.pFrameBuilder()
+	i := 0
+	
+	for pf in [UMAPPf, tSNEPf, PCAPf] {
+		for k, v in pf {
+			exportsPf.add(string(i) + "_" + k, trace.inject(v.spec), v.data)
+			i = i + 1
+		}
+	}
+	
+	exportsPf = exportsPf.build()
 
 	return {
 		outputs: {
-			UMAPPf: pframes.exportFrame(UMAPPf),
-			tSNEPf: pframes.exportFrame(tSNEPf),
-			dimReductionLog: dimReductionLog
+			UMAPPf: pframes.exportFrame(umapOutputPf),
+			tSNEPf: pframes.exportFrame(tsneOutputPf)
 		},
-		exports: exports
+		exports: {
+			pf: exportsPf
+		}
 	}
 })
 
