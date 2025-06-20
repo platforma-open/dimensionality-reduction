@@ -32,6 +32,7 @@ export const model = BlockModel.create()
     graphStateUMAP: {
       title: 'UMAP',
       template: 'dots',
+      currentTab: 'settings',
       layersSettings: {
         dots: {
           dotFill: '#99E099',
@@ -54,14 +55,6 @@ export const model = BlockModel.create()
       && spec.name === 'pl7.app/rna-seq/countMatrix' && spec.domain?.['pl7.app/rna-seq/normalized'] === 'false'
     , { includeNativeLabel: true, addLabelAsSuffix: true }),
   )
-
-  .output('dimReductionLog', (wf) => {
-    const logHandle = wf.outputs?.resolve('dimReductionLog');
-    if (logHandle === undefined) {
-      return undefined;
-    }
-    return logHandle.getLogHandle();
-  })
 
   .output('UMAPPf', (ctx): PFrameHandle | undefined => {
     const pCols = ctx.outputs?.resolve('UMAPPf')?.getPColumns();
@@ -98,8 +91,7 @@ export const model = BlockModel.create()
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
   .sections((_ctx) => ([
-    { type: 'link', href: '/', label: 'Main' },
-    { type: 'link', href: '/umap', label: 'UMAP' },
+    { type: 'link', href: '/', label: 'UMAP' },
     { type: 'link', href: '/tsne', label: 'tSNE' },
   ]))
 
