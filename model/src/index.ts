@@ -42,6 +42,7 @@ export const model = BlockModel.create()
     graphStateTSNE: {
       title: 'tSNE',
       template: 'dots',
+      currentTab: null,
       layersSettings: {
         dots: {
           dotFill: '#99E099',
@@ -49,6 +50,8 @@ export const model = BlockModel.create()
       },
     },
   })
+
+  .argsValid((ctx) => ctx.args.countsRef !== undefined)
 
   .output('countsOptions', (ctx) =>
     ctx.resultPool.getOptions((spec) => isPColumnSpec(spec)
