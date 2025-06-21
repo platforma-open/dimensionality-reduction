@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.7.0
+
+### Minor Changes
+
+- 7b57a6d: Updated UI
+
 ## 1.6.0
 
 ### Minor Changes
