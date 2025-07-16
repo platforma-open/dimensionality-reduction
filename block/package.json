@@ -23,7 +23,7 @@
       "ui": "@platforma-open/milaboratories.dimensionality-reduction.ui/dist"
     },
     "meta": {
-      "title": "Dimenstionality Reduction",
+      "title": "Dimensionality Reduction",
       "logo": "file:../logos/block-logo.png",
       "url": "https://github.com/platforma-open/dimensionality-reduction",
       "docs": "https://github.com/platforma-open/dimensionality-reduction/docs",
