@@ -3,7 +3,7 @@ import '@milaboratories/graph-maker/styles';
 import { PlAccordionSection, PlAlert, PlBlockPage, PlDropdownRef, PlNumberField, PlRow } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 
-import type { GraphMakerProps } from '@milaboratories/graph-maker';
+import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
 import { plRefsEqual, type PlRef } from '@platforma-sdk/model';
 
@@ -17,7 +17,7 @@ function setInput(inputRef?: PlRef) {
     app.model.args.title = undefined;
 }
 
-const defaultOptions: GraphMakerProps['defaultOptions'] = [
+const defaultOptions: PredefinedGraphOption<'scatterplot-umap'>[] = [
   {
     inputName: 'x',
     selectedSource: {
