@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.ui
 
+## 1.7.0
+
+### Minor Changes
+
+- 3128a46: Update SDK packages
+
 ## 1.6.0
 
 ### Minor Changes
