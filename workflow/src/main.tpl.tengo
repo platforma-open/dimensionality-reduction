@@ -49,8 +49,12 @@ wf.body(func(args) {
 	PCADimImportParams := pfPCAConv.getColumns(blockId, inputSpec)
 	PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams, {splitDataAndSpec: true})
 
+	// Make trace with informative label
+	traceLabel := "Dimensionality Reduction (nPCs:" + string(nPCs) + ", nNeighbors:" + string(nNeighbors) + ")"
+	
+	// Make trace
 	trace := pSpec.makeTrace(inputSpec,
-		{type: "milaboratories.dimensionality-reduction", id: blockId, importance: 30, label: "Dimensionality Reduction - "}
+		{type: "milaboratories.dimensionality-reduction", id: blockId, importance: 70, label: traceLabel}
 	)
 
 	// Build UMAP pFrame for outputs
