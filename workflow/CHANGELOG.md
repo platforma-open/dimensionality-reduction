@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.8.0
+
+### Minor Changes
+
+- 360d78f: Update trace and importance
+
 ## 1.7.0
 
 ### Minor Changes
