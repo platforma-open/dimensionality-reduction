@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.7.0
+
+### Minor Changes
+
+- 13f4377: Migrate to PlTabs to switch between UMAP and tSNE
+
 ## 1.6.0
 
 ### Minor Changes
