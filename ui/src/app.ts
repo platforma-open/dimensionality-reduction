@@ -1,7 +1,6 @@
 import { model } from '@platforma-open/milaboratories.dimensionality-reduction.model';
 import { defineApp } from '@platforma-sdk/ui-vue';
 import MainPage from './pages/MainPage.vue';
-import tSNE from './pages/tSNE.vue';
 
 export const sdkPlugin = defineApp(model, (app) => {
   return {
@@ -11,7 +10,6 @@ export const sdkPlugin = defineApp(model, (app) => {
     showErrorsNotification: true,
     routes: {
       '/': () => MainPage,
-      '/tsne': () => tSNE,
     },
   };
 });

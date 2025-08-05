@@ -94,8 +94,7 @@ export const model = BlockModel.create()
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
   .sections((_ctx) => ([
-    { type: 'link', href: '/', label: 'UMAP' },
-    { type: 'link', href: '/tsne', label: 'tSNE' },
+    { type: 'link', href: '/', label: 'Main' },
   ]))
 
   .title((ctx) =>

@@ -1,13 +1,23 @@
 <script setup lang="ts">
 import '@milaboratories/graph-maker/styles';
-import { PlAccordionSection, PlAlert, PlBlockPage, PlDropdownRef, PlNumberField, PlRow } from '@platforma-sdk/ui-vue';
+import { PlAccordionSection, PlAlert, PlBlockPage, PlDropdownRef, PlNumberField, PlRow, PlTabs } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 
 import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
 import { plRefsEqual, type PlRef } from '@platforma-sdk/model';
+import { reactive } from 'vue';
 
 const app = useApp();
+
+const data = reactive({
+  currentTab: 'umap',
+});
+
+const tabOptions = [
+  { label: 'UMAP', value: 'umap' },
+  { label: 't-SNE', value: 'tsne' },
+];
 
 function setInput(inputRef?: PlRef) {
   app.model.args.countsRef = inputRef;
@@ -17,7 +27,7 @@ function setInput(inputRef?: PlRef) {
     app.model.args.title = undefined;
 }
 
-const defaultOptions: PredefinedGraphOption<'scatterplot-umap'>[] = [
+const defaultOptionsUMAP: PredefinedGraphOption<'scatterplot-umap'>[] = [
   {
     inputName: 'x',
     selectedSource: {
@@ -63,15 +73,62 @@ const defaultOptions: PredefinedGraphOption<'scatterplot-umap'>[] = [
   },
 ];
 
+const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
+  {
+    inputName: 'x',
+    selectedSource: {
+      kind: 'PColumn',
+      name: 'pl7.app/rna-seq/tsne1',
+      valueType: 'Double',
+      axesSpec: [
+        {
+          name: 'pl7.app/sampleId',
+          type: 'String',
+        },
+        {
+          name: 'pl7.app/cellId',
+          type: 'String',
+        },
+      ],
+    },
+  },
+  {
+    inputName: 'y',
+    selectedSource: {
+      kind: 'PColumn',
+      name: 'pl7.app/rna-seq/tsne2',
+      valueType: 'Double',
+      axesSpec: [
+        {
+          name: 'pl7.app/sampleId',
+          type: 'String',
+        },
+        {
+          name: 'pl7.app/cellId',
+          type: 'String',
+        },
+      ],
+    },
+  },
+  {
+    inputName: 'grouping',
+    selectedSource: {
+      name: 'pl7.app/sampleId',
+      type: 'String',
+    },
+  },
+];
 </script>
 
 <template>
   <PlBlockPage>
+    <PlTabs v-model="data.currentTab" :options="tabOptions" />
     <GraphMaker
+      v-if="data.currentTab === 'umap'"
       v-model="app.model.ui.graphStateUMAP"
       chartType="scatterplot-umap"
       :p-frame="app.model.outputs.UMAPPf"
-      :default-options="defaultOptions"
+      :default-options="defaultOptionsUMAP"
     >
       <template #settingsSlot>
         <PlDropdownRef
@@ -142,5 +199,13 @@ const defaultOptions: PredefinedGraphOption<'scatterplot-umap'>[] = [
         </PlAccordionSection>
       </template>
     </GraphMaker>
+
+    <GraphMaker
+      v-else-if="data.currentTab === 'tsne'"
+      v-model="app.model.ui.graphStateTSNE"
+      chartType="scatterplot-umap"
+      :p-frame="app.model.outputs.tSNEPf"
+      :default-options="defaultOptionsTSNE"
+    />
   </PlBlockPage>
 </template>
