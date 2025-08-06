@@ -133,13 +133,15 @@ const graphState = computed({
 const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMAPPf : app.model.outputs.tSNEPf);
 const defaultOptions = computed(() => data.currentTab === 'umap' ? defaultOptionsUMAP : defaultOptionsTSNE);
 
+/* Use both currentTab and pFrame in :key to force re-render the graph when either args (which changes the pFrame) or the tab changes */
+
 </script>
 
 <template>
   <PlBlockPage>
     <PlTabs v-model="data.currentTab" :options="tabOptions" />
     <GraphMaker
-      :key="data.currentTab"
+      :key="`${data.currentTab}-${pFrame}`"
       v-model="graphState"
       chartType="scatterplot-umap"
       :p-frame="pFrame"
