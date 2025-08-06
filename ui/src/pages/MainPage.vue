@@ -6,7 +6,7 @@ import { useApp } from '../app';
 import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
 import { plRefsEqual, type PlRef } from '@platforma-sdk/model';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 
 const app = useApp();
 
@@ -118,17 +118,32 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
     },
   },
 ];
+
+/* Modify graph state, pframe and default options based on the selected tab */
+const graphState = computed({
+  get: () => data.currentTab === 'umap' ? app.model.ui.graphStateUMAP : app.model.ui.graphStateTSNE,
+  set: (value) => {
+    if (data.currentTab === 'umap')
+      app.model.ui.graphStateUMAP = value;
+    else
+      app.model.ui.graphStateTSNE = value;
+  },
+});
+
+const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMAPPf : app.model.outputs.tSNEPf);
+const defaultOptions = computed(() => data.currentTab === 'umap' ? defaultOptionsUMAP : defaultOptionsTSNE);
+
 </script>
 
 <template>
   <PlBlockPage>
     <PlTabs v-model="data.currentTab" :options="tabOptions" />
     <GraphMaker
-      v-if="data.currentTab === 'umap'"
-      v-model="app.model.ui.graphStateUMAP"
+      :key="data.currentTab"
+      v-model="graphState"
       chartType="scatterplot-umap"
-      :p-frame="app.model.outputs.UMAPPf"
-      :default-options="defaultOptionsUMAP"
+      :p-frame="pFrame"
+      :default-options="defaultOptions"
     >
       <template #settingsSlot>
         <PlDropdownRef
@@ -199,13 +214,5 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
         </PlAccordionSection>
       </template>
     </GraphMaker>
-
-    <GraphMaker
-      v-else-if="data.currentTab === 'tsne'"
-      v-model="app.model.ui.graphStateTSNE"
-      chartType="scatterplot-umap"
-      :p-frame="app.model.outputs.tSNEPf"
-      :default-options="defaultOptionsTSNE"
-    />
   </PlBlockPage>
 </template>
