@@ -144,7 +144,7 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
           <PlRow>
             <PlNumberField
               v-model="app.model.args.nPCs"
-              label="N PCs" :minValue="20" :step="1"
+              label="N PCs" :min-value="20" :step="1"
             >
               <template #tooltip>
                 <div>
@@ -160,7 +160,7 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
             </PlNumberField>
             <PlNumberField
               v-model="app.model.args.nNeighbors"
-              label="N Neighbors" :minValue="5" :step="1"
+              label="N Neighbors" :min-value="5" :step="1"
             >
               <template #tooltip>
                 <div>
@@ -174,7 +174,7 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
                 </div>
               </template>
             </PlNumberField>
-          </PlRow >
+          </PlRow>
           <!-- Add warnings if selected parameters are out of most commonly used bounds -->
           <PlAlert v-if="app.model.args.nPCs > 20 && app.model.args.nPCs < 30" type="warn">
             <template #title>Suboptimal PC Count</template>
