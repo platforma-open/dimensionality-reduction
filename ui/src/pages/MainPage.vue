@@ -33,19 +33,29 @@ function getIndex(name: string, pcols: PColumnIdAndSpec[]): number {
   ));
 }
 
-const defaultOptionsUMAP = computed((): PredefinedGraphOption<'scatterplot-umap'>[] | undefined => {
-  const pcols = app.model.outputs.UMAPPfPcols;
-  if (!pcols)
+/* Function to create default options according to the selected tab */
+function createDefaultOptions(
+  pcols: PColumnIdAndSpec[] | undefined,
+  coord1Name: string,
+  coord2Name: string,
+): PredefinedGraphOption<'scatterplot-umap'>[] | undefined {
+  if (!pcols || pcols.length === 0)
+    return undefined;
+
+  const coord1Index = getIndex(coord1Name, pcols);
+  const coord2Index = getIndex(coord2Name, pcols);
+
+  if (coord1Index === -1 || coord2Index === -1)
     return undefined;
 
   return [
     {
       inputName: 'x',
-      selectedSource: pcols[getIndex('pl7.app/rna-seq/umap1', pcols)].spec,
+      selectedSource: pcols[coord1Index].spec,
     },
     {
       inputName: 'y',
-      selectedSource: pcols[getIndex('pl7.app/rna-seq/umap2', pcols)].spec,
+      selectedSource: pcols[coord2Index].spec,
     },
     /* Grouping/Color is set to sampleId, first axis of coord pcols */
     {
@@ -53,27 +63,24 @@ const defaultOptionsUMAP = computed((): PredefinedGraphOption<'scatterplot-umap'
       selectedSource: pcols[0].spec.axesSpec[0],
     },
   ];
-});
+}
 
-const defaultOptionsTSNE = computed((): PredefinedGraphOption<'scatterplot-umap'>[] | undefined => {
-  const pcols = app.model.outputs.tSNEPfPcols;
-  if (!pcols)
-    return undefined;
-
-  return [
-    {
-      inputName: 'x',
-      selectedSource: pcols[getIndex('pl7.app/rna-seq/tsne1', pcols)].spec,
-    },
-    {
-      inputName: 'y',
-      selectedSource: pcols[getIndex('pl7.app/rna-seq/tsne2', pcols)].spec,
-    },
-    {
-      inputName: 'grouping',
-      selectedSource: pcols[0].spec.axesSpec[0],
-    },
-  ];
+const defaultOptions = computed((): PredefinedGraphOption<'scatterplot-umap'>[] | undefined => {
+  if (data.currentTab === 'umap') {
+    return createDefaultOptions(
+      app.model.outputs.UMAPPfPcols,
+      'pl7.app/rna-seq/umap1',
+      'pl7.app/rna-seq/umap2',
+    );
+  }
+  if (data.currentTab === 'tsne') {
+    return createDefaultOptions(
+      app.model.outputs.tSNEPfPcols,
+      'pl7.app/rna-seq/tsne1',
+      'pl7.app/rna-seq/tsne2',
+    );
+  }
+  return undefined;
 });
 
 /* Modify graph state, pframe and default options based on the selected tab */
@@ -88,7 +95,6 @@ const graphState = computed({
 });
 
 const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMAPPf : app.model.outputs.tSNEPf);
-const defaultOptions = computed(() => data.currentTab === 'umap' ? defaultOptionsUMAP.value : defaultOptionsTSNE.value);
 
 /* Use both currentTab and pFrame in :key to force re-render the graph when either args (which changes the pFrame) or the tab changes */
 
