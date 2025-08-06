@@ -5,7 +5,8 @@ import { useApp } from '../app';
 
 import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
-import { plRefsEqual, type PlRef } from '@platforma-sdk/model';
+import type { PColumnIdAndSpec, PlRef } from '@platforma-sdk/model';
+import { plRefsEqual } from '@platforma-sdk/model';
 import { computed, reactive } from 'vue';
 
 const app = useApp();
@@ -27,97 +28,53 @@ function setInput(inputRef?: PlRef) {
     app.model.args.title = undefined;
 }
 
-const defaultOptionsUMAP: PredefinedGraphOption<'scatterplot-umap'>[] = [
-  {
-    inputName: 'x',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/umap1',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
-    },
-  },
-  {
-    inputName: 'y',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/umap2',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
-    },
-  },
-  {
-    inputName: 'grouping',
-    selectedSource: {
-      name: 'pl7.app/sampleId',
-      type: 'String',
-    },
-  },
-];
+function getIndex(name: string, pcols: PColumnIdAndSpec[]): number {
+  return pcols.findIndex((p) => (p.spec.name === name
+  ));
+}
 
-const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
-  {
-    inputName: 'x',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/tsne1',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
+const defaultOptionsUMAP = computed((): PredefinedGraphOption<'scatterplot-umap'>[] | undefined => {
+  const pcols = app.model.outputs.UMAPPfPcols;
+  if (!pcols)
+    return undefined;
+
+  return [
+    {
+      inputName: 'x',
+      selectedSource: pcols[getIndex('pl7.app/rna-seq/umap1', pcols)].spec,
     },
-  },
-  {
-    inputName: 'y',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/tsne2',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
+    {
+      inputName: 'y',
+      selectedSource: pcols[getIndex('pl7.app/rna-seq/umap2', pcols)].spec,
     },
-  },
-  {
-    inputName: 'grouping',
-    selectedSource: {
-      name: 'pl7.app/sampleId',
-      type: 'String',
+    /* Grouping/Color is set to sampleId, first axis of coord pcols */
+    {
+      inputName: 'grouping',
+      selectedSource: pcols[0].spec.axesSpec[0],
     },
-  },
-];
+  ];
+});
+
+const defaultOptionsTSNE = computed((): PredefinedGraphOption<'scatterplot-umap'>[] | undefined => {
+  const pcols = app.model.outputs.tSNEPfPcols;
+  if (!pcols)
+    return undefined;
+
+  return [
+    {
+      inputName: 'x',
+      selectedSource: pcols[getIndex('pl7.app/rna-seq/tsne1', pcols)].spec,
+    },
+    {
+      inputName: 'y',
+      selectedSource: pcols[getIndex('pl7.app/rna-seq/tsne2', pcols)].spec,
+    },
+    {
+      inputName: 'grouping',
+      selectedSource: pcols[0].spec.axesSpec[0],
+    },
+  ];
+});
 
 /* Modify graph state, pframe and default options based on the selected tab */
 const graphState = computed({
@@ -131,7 +88,7 @@ const graphState = computed({
 });
 
 const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMAPPf : app.model.outputs.tSNEPf);
-const defaultOptions = computed(() => data.currentTab === 'umap' ? defaultOptionsUMAP : defaultOptionsTSNE);
+const defaultOptions = computed(() => data.currentTab === 'umap' ? defaultOptionsUMAP.value : defaultOptionsTSNE.value);
 
 /* Use both currentTab and pFrame in :key to force re-render the graph when either args (which changes the pFrame) or the tab changes */
 
