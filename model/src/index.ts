@@ -1,8 +1,10 @@
 import type { GraphMakerState } from '@milaboratories/graph-maker';
 import type {
   InferOutputsType,
+  PColumnIdAndSpec,
   PFrameHandle,
-  PlRef } from '@platforma-sdk/model';
+  PlRef,
+} from '@platforma-sdk/model';
 import {
   BlockModel,
   isPColumn,
@@ -75,6 +77,20 @@ export const model = BlockModel.create()
     return ctx.createPFrame([...pCols, ...upstream]);
   })
 
+  .output('UMAPPfPcols', (ctx) => {
+    const pCols = ctx.outputs?.resolve('UMAPPf')?.getPColumns();
+    if (pCols === undefined)
+      return undefined;
+
+    return pCols.map(
+      (c) =>
+        ({
+          columnId: c.id,
+          spec: c.spec,
+        } satisfies PColumnIdAndSpec),
+    );
+  })
+
   .output('tSNEPf', (ctx): PFrameHandle | undefined => {
     const pCols = ctx.outputs?.resolve('tSNEPf')?.getPColumns();
     if (pCols === undefined) {
@@ -89,6 +105,20 @@ export const model = BlockModel.create()
       .filter((column) => column.id.includes('metadata'));
 
     return ctx.createPFrame([...pCols, ...upstream]);
+  })
+
+  .output('tSNEPfPcols', (ctx) => {
+    const pCols = ctx.outputs?.resolve('tSNEPf')?.getPColumns();
+    if (pCols === undefined)
+      return undefined;
+
+    return pCols.map(
+      (c) =>
+        ({
+          columnId: c.id,
+          spec: c.spec,
+        } satisfies PColumnIdAndSpec),
+    );
   })
 
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
