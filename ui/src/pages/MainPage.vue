@@ -102,7 +102,6 @@ const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMA
 
 <template>
   <PlBlockPage>
-    <PlTabs v-model="data.currentTab" :options="tabOptions" />
     <GraphMaker
       :key="`${data.currentTab}-${pFrame}`"
       v-model="graphState"
@@ -110,6 +109,9 @@ const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMA
       :p-frame="pFrame"
       :default-options="defaultOptions"
     >
+      <template #titleLineSlot>
+        <PlTabs v-model="data.currentTab" :options="tabOptions" :style="{ display: 'flex', justifyContent: 'flex-end' }"/>
+      </template>
       <template #settingsSlot>
         <PlDropdownRef
           v-model="app.model.args.countsRef" :options="app.model.outputs.countsOptions"
