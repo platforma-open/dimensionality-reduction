@@ -5,8 +5,9 @@ import { useApp } from '../app';
 
 import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
-import { plRefsEqual, type PlRef } from '@platforma-sdk/model';
-import { reactive } from 'vue';
+import type { PColumnIdAndSpec, PlRef } from '@platforma-sdk/model';
+import { plRefsEqual } from '@platforma-sdk/model';
+import { computed, reactive } from 'vue';
 
 const app = useApp();
 
@@ -27,109 +28,90 @@ function setInput(inputRef?: PlRef) {
     app.model.args.title = undefined;
 }
 
-const defaultOptionsUMAP: PredefinedGraphOption<'scatterplot-umap'>[] = [
-  {
-    inputName: 'x',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/umap1',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
-    },
-  },
-  {
-    inputName: 'y',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/umap2',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
-    },
-  },
-  {
-    inputName: 'grouping',
-    selectedSource: {
-      name: 'pl7.app/sampleId',
-      type: 'String',
-    },
-  },
-];
+function getIndex(name: string, pcols: PColumnIdAndSpec[]): number {
+  return pcols.findIndex((p) => (p.spec.name === name
+  ));
+}
 
-const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
-  {
-    inputName: 'x',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/tsne1',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
+/* Function to create default options according to the selected tab */
+function createDefaultOptions(
+  pcols: PColumnIdAndSpec[] | undefined,
+  coord1Name: string,
+  coord2Name: string,
+): PredefinedGraphOption<'scatterplot-umap'>[] | undefined {
+  if (!pcols || pcols.length === 0)
+    return undefined;
+
+  const coord1Index = getIndex(coord1Name, pcols);
+  const coord2Index = getIndex(coord2Name, pcols);
+
+  if (coord1Index === -1 || coord2Index === -1)
+    return undefined;
+
+  return [
+    {
+      inputName: 'x',
+      selectedSource: pcols[coord1Index].spec,
     },
-  },
-  {
-    inputName: 'y',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/tsne2',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
+    {
+      inputName: 'y',
+      selectedSource: pcols[coord2Index].spec,
     },
-  },
-  {
-    inputName: 'grouping',
-    selectedSource: {
-      name: 'pl7.app/sampleId',
-      type: 'String',
+    /* Grouping/Color is set to sampleId, first axis of coord pcols */
+    {
+      inputName: 'grouping',
+      selectedSource: pcols[0].spec.axesSpec[0],
     },
+  ];
+}
+
+const defaultOptions = computed((): PredefinedGraphOption<'scatterplot-umap'>[] | undefined => {
+  if (data.currentTab === 'umap') {
+    return createDefaultOptions(
+      app.model.outputs.UMAPPfPcols,
+      'pl7.app/rna-seq/umap1',
+      'pl7.app/rna-seq/umap2',
+    );
+  }
+  if (data.currentTab === 'tsne') {
+    return createDefaultOptions(
+      app.model.outputs.tSNEPfPcols,
+      'pl7.app/rna-seq/tsne1',
+      'pl7.app/rna-seq/tsne2',
+    );
+  }
+  return undefined;
+});
+
+/* Modify graph state, pframe and default options based on the selected tab */
+const graphState = computed({
+  get: () => data.currentTab === 'umap' ? app.model.ui.graphStateUMAP : app.model.ui.graphStateTSNE,
+  set: (value) => {
+    if (data.currentTab === 'umap')
+      app.model.ui.graphStateUMAP = value;
+    else
+      app.model.ui.graphStateTSNE = value;
   },
-];
+});
+
+const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMAPPf : app.model.outputs.tSNEPf);
+
+/* Use both currentTab and pFrame in :key to force re-render the graph when either args (which changes the pFrame) or the tab changes */
+
 </script>
 
 <template>
   <PlBlockPage>
-    <PlTabs v-model="data.currentTab" :options="tabOptions" />
     <GraphMaker
-      v-if="data.currentTab === 'umap'"
-      v-model="app.model.ui.graphStateUMAP"
+      :key="`${data.currentTab}-${pFrame}`"
+      v-model="graphState"
       chartType="scatterplot-umap"
-      :p-frame="app.model.outputs.UMAPPf"
-      :default-options="defaultOptionsUMAP"
+      :p-frame="pFrame"
+      :default-options="defaultOptions"
     >
+      <template #titleLineSlot>
+        <PlTabs v-model="data.currentTab" :options="tabOptions" :style="{ display: 'flex', justifyContent: 'flex-end' }"/>
+      </template>
       <template #settingsSlot>
         <PlDropdownRef
           v-model="app.model.args.countsRef" :options="app.model.outputs.countsOptions"
@@ -144,7 +126,7 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
           <PlRow>
             <PlNumberField
               v-model="app.model.args.nPCs"
-              label="N PCs" :minValue="20" :step="1"
+              label="N PCs" :min-value="20" :step="1"
             >
               <template #tooltip>
                 <div>
@@ -160,7 +142,7 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
             </PlNumberField>
             <PlNumberField
               v-model="app.model.args.nNeighbors"
-              label="N Neighbors" :minValue="5" :step="1"
+              label="N Neighbors" :min-value="5" :step="1"
             >
               <template #tooltip>
                 <div>
@@ -174,7 +156,7 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
                 </div>
               </template>
             </PlNumberField>
-          </PlRow >
+          </PlRow>
           <!-- Add warnings if selected parameters are out of most commonly used bounds -->
           <PlAlert v-if="app.model.args.nPCs > 20 && app.model.args.nPCs < 30" type="warn">
             <template #title>Suboptimal PC Count</template>
@@ -199,13 +181,5 @@ const defaultOptionsTSNE: PredefinedGraphOption<'scatterplot-umap'>[] = [
         </PlAccordionSection>
       </template>
     </GraphMaker>
-
-    <GraphMaker
-      v-else-if="data.currentTab === 'tsne'"
-      v-model="app.model.ui.graphStateTSNE"
-      chartType="scatterplot-umap"
-      :p-frame="app.model.outputs.tSNEPf"
-      :default-options="defaultOptionsTSNE"
-    />
   </PlBlockPage>
 </template>
