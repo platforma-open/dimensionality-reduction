@@ -1,5 +1,12 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.8.1
+
+### Patch Changes
+
+- Updated dependencies [88e3ca8]
+  - @platforma-open/milaboratories.dimensionality-reduction.software@1.5.0
+
 ## 1.8.0
 
 ### Minor Changes

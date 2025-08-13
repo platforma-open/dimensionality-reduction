@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.dimensionality-reduction.workflow",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "type": "module",
   "description": "Block Workflow",
   "scripts": {

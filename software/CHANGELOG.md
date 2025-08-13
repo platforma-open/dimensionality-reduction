@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.software
 
+## 1.5.0
+
+### Minor Changes
+
+- 88e3ca8: Update script to work with updated Cell ID axis specifications
+
 ## 1.4.2
 
 ### Patch Changes
