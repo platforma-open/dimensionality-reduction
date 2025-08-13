@@ -28,11 +28,26 @@ def log_message(message, status="INFO"):
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] [{status}] {message}")
 
+
 def load_and_process_data(file_path):
     log_message("Starting data loading and preprocessing", "STEP")
     # Load the data from the CSV file
     raw_data_long = pd.read_csv(file_path)
     log_message(f"Loaded data from {file_path}, shape: {raw_data_long.shape}")
+
+    # Validate and normalize column headers to support both legacy and new names
+    base_required = {"Sample", "Ensembl Id", "Raw gene expression"}
+    cell_headers = {"Cell Barcode", "Cell ID"}
+
+    missing_base = base_required - set(raw_data_long.columns)
+    has_cell_header = any(h in raw_data_long.columns for h in cell_headers)
+    if missing_base or not has_cell_header:
+        expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
+        raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(raw_data_long.columns)}")
+
+    # Normalize to legacy internal name 'Cell Barcode'
+    if "Cell ID" in raw_data_long.columns and "Cell Barcode" not in raw_data_long.columns:
+        raw_data_long = raw_data_long.rename(columns={"Cell ID": "Cell Barcode"})
 
     # Create a unique identifier for each cell
     raw_data_long['UniqueCellId'] = raw_data_long['Sample'] + '_' + raw_data_long['Cell Barcode']
@@ -60,6 +75,7 @@ def load_and_process_data(file_path):
     log_message("Normalization and normalization completed", "DONE")
 
     return adata
+
 
 def save_pca(adata, output_dir):
     """Saves PCA results in long format: UniqueCellId, SampleId, CellId, PC, value"""
@@ -121,6 +137,7 @@ def save_formatted_output(adata, embedding, embedding_name, output_dir):
     embedding_df.to_csv(output_path, index=False)
     log_message(f"{embedding_name} results saved", "DONE")
 
+
 def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -161,6 +178,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     save_formatted_output(adata, umap_results, 'UMAP', output_dir)
     log_message("Dimensionality reduction completed", "DONE")
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process counts in long format and perform dimensionality reduction.')
     parser.add_argument('--file_path', type=str, help='Path to the counts CSV file.')
@@ -169,12 +187,14 @@ def parse_arguments():
     parser.add_argument('--n_neighbors', type=int, default=15, help='Number of neighbors for UMAP (default: 15).')
     return parser.parse_args()
 
+
 def main():
     log_message("Starting block execution", "INFO")
     args = parse_arguments()
     adata = load_and_process_data(args.file_path)
     run_dimensionality_reduction(adata, args.output_dir, args.n_pcs, args.n_neighbors)
     log_message("Block execution finished", "INFO")
+
 
 if __name__ == '__main__':
     main()
