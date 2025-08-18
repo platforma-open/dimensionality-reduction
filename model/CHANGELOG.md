@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.8.0
+
+### Minor Changes
+
+- 205d015: Fixed script version. Added tabs for plot visualization. Minor fixes and reduced redundancy.
+
 ## 1.7.0
 
 ### Minor Changes
