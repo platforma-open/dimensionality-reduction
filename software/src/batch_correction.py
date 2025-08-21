@@ -18,7 +18,23 @@ os.makedirs(args.output, exist_ok=True)
 
 # Load raw count data (long format)
 print("Loading raw counts...")
-counts_df = pd.read_csv(args.counts, dtype={"Sample": str, "Cell Barcode": str, "Ensembl Id": str})
+counts_df = pd.read_csv(args.counts, dtype={"Sample": str, "Ensembl Id": str})
+
+# Validate and normalize column headers to support both legacy and new names
+base_required = {"Sample", "Ensembl Id", "Raw gene expression"}
+cell_headers = {"Cell Barcode", "Cell ID"}
+
+missing_base = base_required - set(counts_df.columns)
+has_cell_header = any(h in counts_df.columns for h in cell_headers)
+if missing_base or not has_cell_header:
+    expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
+    raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(counts_df.columns)}")
+
+# Normalize to legacy internal name 'Cell Barcode'
+if "Cell ID" in counts_df.columns and "Cell Barcode" not in counts_df.columns:
+    counts_df = counts_df.rename(columns={"Cell ID": "Cell Barcode"})
+
+counts_df["Cell Barcode"] = counts_df["Cell Barcode"].astype(str)
 
 # Load metadata
 print("Loading metadata...")
