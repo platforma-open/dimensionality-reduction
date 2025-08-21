@@ -23,10 +23,16 @@ wf.body(func(args) {
 	nPCs := args.nPCs
 	nNeighbors := args.nNeighbors
 
-	csvCounts := xsv.exportFrame([rawCounts], "csv", {})
+	// Set default memory and CPU for imports
+    defaultConvMem := "16GiB" // @TODO: set based on the size of the input
+    defaultConvCpu := 1 // @TODO: set based on the size of the input
+
+	csvCounts := xsv.exportFrame([rawCounts], "csv", { mem: defaultConvMem, cpu: defaultConvCpu })
 
 	dimReduction := exec.builder().
 		software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-dimRed")).
+		mem("32GiB").
+		cpu(1).
 		addFile("rawCounts.csv", csvCounts).
 		arg("--file_path").arg("rawCounts.csv").
 		arg("--output_dir").arg(".").
@@ -41,13 +47,13 @@ wf.body(func(args) {
 		run()
 
 	UMAPDimImportParams := pfUMAPConv.getColumns(blockId, inputSpec)
-	UMAPPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", UMAPDimImportParams, {splitDataAndSpec: true})
+	UMAPPf := xsv.importFile(dimReduction.getFile("umap_results.csv"), "csv", UMAPDimImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
 	tSNEDimImportParams := pfTSNEConv.getColumns(blockId, inputSpec)
-	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams, {splitDataAndSpec: true})
+	tSNEPf := xsv.importFile(dimReduction.getFile("tsne_results.csv"), "csv", tSNEDimImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
 	PCADimImportParams := pfPCAConv.getColumns(blockId, inputSpec)
-	PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams, {splitDataAndSpec: true})
+	PCAPf := xsv.importFile(dimReduction.getFile("pca_results.csv"), "csv", PCADimImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
 	// Make trace with informative label
 	traceLabel := "Dimensionality Reduction (nPCs:" + string(nPCs) + ", nNeighbors:" + string(nNeighbors) + ")"
