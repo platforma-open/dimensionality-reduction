@@ -69,6 +69,7 @@ wf.body(func(args) {
 	// Conditionally run batch correction if covariates are provided
 	UMAPHarmonyPf := undefined
 	tSNEHarmonyPf := undefined
+	
 	if len(args.covariateRefs) > 0 {
 		covariates := []
 		for _, v in args.metaRefs {
@@ -133,19 +134,6 @@ wf.body(func(args) {
 	}
 	tsneOutputPf = tsneOutputPf.build()
 
-	// Build combined exports pFrame
-	exportsPf := pframes.pFrameBuilder()
-	i := 0
-	
-	for pf in [UMAPPf, tSNEPf, PCAPf] {
-		for k, v in pf {
-			exportsPf.add(string(i) + "_" + k, trace.inject(v.spec), v.data)
-			i = i + 1
-		}
-	}
-	
-	exportsPf = exportsPf.build()
-
 	// Build outputs pFrame
 	outputs := {
 		UMAPPf: pframes.exportFrame(umapOutputPf),
@@ -169,6 +157,29 @@ wf.body(func(args) {
 		outputs.UMAPHarmonyPf = pframes.exportFrame(umapHarmonyOutputPf)
 		outputs.tSNEHarmonyPf = pframes.exportFrame(tsneHarmonyOutputPf)
 	}
+
+	// Build combined exports pFrame
+	exportsPf := pframes.pFrameBuilder()
+	i := 0
+	
+	for pf in [UMAPPf, tSNEPf, PCAPf] {
+		for k, v in pf {
+			exportsPf.add(string(i) + "_" + k, trace.inject(v.spec), v.data)
+			i = i + 1
+		}
+	}
+	
+	// Conditionally add harmony-corrected outputs to exports pFrame
+	if len(args.covariateRefs) > 0 {
+		for pf in [UMAPHarmonyPf, tSNEHarmonyPf] {
+			for k, v in pf {
+				exportsPf.add(string(i) + "_" + k, trace.inject(v.spec), v.data)
+				i = i + 1
+			}
+		}
+	}
+
+	exportsPf = exportsPf.build()
 
 	return {
 		outputs: outputs,
