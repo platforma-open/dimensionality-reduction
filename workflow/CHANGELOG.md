@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.9.0
+
+### Minor Changes
+
+- 74853c1: Add batch support
+
 ## 1.8.2
 
 ### Patch Changes
