@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.8.2
+
+### Patch Changes
+
+- ed32e66: Fixed github workflow build
+
 ## 1.8.1
 
 ### Patch Changes

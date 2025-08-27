@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.9.2
+
+### Patch Changes
+
+- ed32e66: Fixed github workflow build
+- Updated dependencies [ed32e66]
+  - @platforma-open/milaboratories.dimensionality-reduction.software@1.7.2
+
 ## 1.9.1
 
 ### Patch Changes
