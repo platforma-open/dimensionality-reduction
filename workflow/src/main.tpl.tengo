@@ -69,6 +69,7 @@ wf.body(func(args) {
 	// Conditionally run batch correction if covariates are provided
 	UMAPHarmonyPf := undefined
 	tSNEHarmonyPf := undefined
+	PCAHarmonyPf := undefined
 	
 	if len(args.covariateRefs) > 0 {
 		covariates := []
@@ -79,34 +80,34 @@ wf.body(func(args) {
 		csvCovariates := xsv.exportFrame(covariates, "csv", {})
 
 		batchCorrection := exec.builder().
-		software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-batchCorrection")).
-		addFile("rawCounts.csv", csvCounts).
-		addFile("metadata.csv", csvCovariates).
-		arg("--counts").arg("rawCounts.csv").
-		arg("--metadata").arg("metadata.csv").
-		arg("--output").arg(".").
-		saveFile("umap_dimensions.csv").
-		saveFile("tsne_dimensions.csv").
-		// saveFile("batch_corrected_counts.csv").
-		// saveFile("batch_corrected_normalized_counts.csv").
-		saveFile("harmony_results.csv").
-		printErrStreamToStdout().
-		saveStdoutContent().
-		cache(24 * 60 * 60 * 1000).
-		run()
+			software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-batchCorrection")).
+			addFile("rawCounts.csv", csvCounts).
+			addFile("metadata.csv", csvCovariates).
+			arg("--counts").arg("rawCounts.csv").
+			arg("--metadata").arg("metadata.csv").
+			arg("--output").arg(".").
+			saveFile("umap_dimensions.csv").
+			saveFile("tsne_dimensions.csv").
+			// saveFile("batch_corrected_counts.csv").
+			// saveFile("batch_corrected_normalized_counts.csv").
+			saveFile("harmony_results.csv").
+			printErrStreamToStdout().
+			saveStdoutContent().
+			cache(24 * 60 * 60 * 1000).
+			run()
 
     	// Process harmony-corrected results
     	UMAPHarmonyDimImportParams := pfUMAPBatchConv.getColumns(blockId, inputSpec)
-    	UMAPHarmonyPf := xsv.importFile(batchCorrection.getFile("umap_dimensions.csv"), "csv", UMAPHarmonyDimImportParams, {splitDataAndSpec: true})
+    	UMAPHarmonyPf = xsv.importFile(batchCorrection.getFile("umap_dimensions.csv"), "csv", UMAPHarmonyDimImportParams, {splitDataAndSpec: true})
 
     	tSNEHarmonyDimImportParams := pfTSNEBatchConv.getColumns(blockId, inputSpec)
-    	tSNEHarmonyPf := xsv.importFile(batchCorrection.getFile("tsne_dimensions.csv"), "csv", tSNEHarmonyDimImportParams, {splitDataAndSpec: true})
+    	tSNEHarmonyPf = xsv.importFile(batchCorrection.getFile("tsne_dimensions.csv"), "csv", tSNEHarmonyDimImportParams, {splitDataAndSpec: true})
 
 		// batchCorrectedCountsImportParams := pfRawCountsConv.getColumns(blockId, inputSpec, species)
 		// batchCorrectedCountsPf := xsv.importFile(batchCorrection.getFile("batch_corrected_counts.csv"), "csv", batchCorrectedCountsImportParams)
 
     	PCAHarmonyDimImportParams := pfPCABatchConv.getColumns(blockId, inputSpec)
-    	PCAHarmonyPf := xsv.importFile(batchCorrection.getFile("harmony_results.csv"), "csv", PCAHarmonyDimImportParams, {splitDataAndSpec: true})
+    	PCAHarmonyPf = xsv.importFile(batchCorrection.getFile("harmony_results.csv"), "csv", PCAHarmonyDimImportParams, {splitDataAndSpec: true})
 
 		// batchCorrectedNormalizedCountsImportParams := pfNormCountsConv.getColumns(blockId, inputSpec, species)
 		// batchCorrectedNormalizedCountsPf := xsv.importFile(batchCorrection.getFile("batch_corrected_normalized_counts.csv"), "csv", batchCorrectedNormalizedCountsImportParams)
