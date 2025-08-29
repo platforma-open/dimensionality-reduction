@@ -60,7 +60,7 @@ wf.body(func(args) {
 	
 	// Make trace
 	trace := pSpec.makeTrace(inputSpec,
-		{type: "milaboratories.dimensionality-reduction", id: blockId, importance: 70, label: traceLabel}
+		{type: "milaboratories.dimensionality-reduction", id: blockId, importance: 30, label: traceLabel}
 	)
 
 	// Build UMAP pFrame for outputs
