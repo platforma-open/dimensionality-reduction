@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.9.3
+
+### Patch Changes
+
+- 7d0f84f: Updated trace
+
 ## 1.9.2
 
 ### Patch Changes
