@@ -225,6 +225,6 @@ export const model = BlockModel.create()
       : 'Dimensionality Reduction',
   )
 
-  .done();
+  .done(2);
 
 export type BlockOutputs = InferOutputsType<typeof model>;
