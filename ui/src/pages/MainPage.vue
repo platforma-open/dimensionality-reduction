@@ -30,8 +30,8 @@ const tabOptions = computed(() => {
 
   if (app.model.outputs.hasBatchCorrection) {
     baseOptions.push(
-      { label: 'UMAP (Harmony)', value: 'umap-harmony' },
-      { label: 't-SNE (Harmony)', value: 'tsne-harmony' },
+      { label: 'UMAP (Corrected)', value: 'umap-harmony' },
+      { label: 't-SNE (Corrected)', value: 'tsne-harmony' },
     );
   }
 
