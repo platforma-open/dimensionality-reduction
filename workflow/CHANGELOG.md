@@ -1,5 +1,32 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.9.3
+
+### Patch Changes
+
+- 7d0f84f: Updated trace
+
+## 1.9.2
+
+### Patch Changes
+
+- ed32e66: Fixed github workflow build
+- Updated dependencies [ed32e66]
+  - @platforma-open/milaboratories.dimensionality-reduction.software@1.7.2
+
+## 1.9.1
+
+### Patch Changes
+
+- Updated dependencies [cd0b06b]
+  - @platforma-open/milaboratories.dimensionality-reduction.software@1.7.1
+
+## 1.9.0
+
+### Minor Changes
+
+- 74853c1: Add batch support
+
 ## 1.8.2
 
 ### Patch Changes

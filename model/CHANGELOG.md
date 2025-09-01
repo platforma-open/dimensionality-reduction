@@ -1,5 +1,17 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.8.2
+
+### Patch Changes
+
+- ed32e66: Fixed github workflow build
+
+## 1.8.1
+
+### Patch Changes
+
+- cd0b06b: Updated SDK and fixed dataset option naming
+
 ## 1.8.0
 
 ### Minor Changes

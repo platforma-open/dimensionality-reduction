@@ -1,5 +1,38 @@
 # @platforma-open/milaboratories.dimensionality-reduction
 
+## 1.2.8
+
+### Patch Changes
+
+- Updated dependencies [7d0f84f]
+  - @platforma-open/milaboratories.dimensionality-reduction.workflow@1.9.3
+
+## 1.2.7
+
+### Patch Changes
+
+- ed32e66: Fixed github workflow build
+- Updated dependencies [ed32e66]
+  - @platforma-open/milaboratories.dimensionality-reduction.model@1.8.2
+  - @platforma-open/milaboratories.dimensionality-reduction.ui@1.9.2
+  - @platforma-open/milaboratories.dimensionality-reduction.workflow@1.9.2
+
+## 1.2.6
+
+### Patch Changes
+
+- Updated dependencies [cd0b06b]
+  - @platforma-open/milaboratories.dimensionality-reduction.model@1.8.1
+  - @platforma-open/milaboratories.dimensionality-reduction.workflow@1.9.1
+  - @platforma-open/milaboratories.dimensionality-reduction.ui@1.9.1
+
+## 1.2.5
+
+### Patch Changes
+
+- Updated dependencies [74853c1]
+  - @platforma-open/milaboratories.dimensionality-reduction.workflow@1.9.0
+
 ## 1.2.4
 
 ### Patch Changes
