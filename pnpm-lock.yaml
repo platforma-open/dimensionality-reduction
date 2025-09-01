@@ -48,6 +48,9 @@ catalogs:
     '@vitejs/plugin-vue':
       specifier: ^5.2.1
       version: 5.2.1
+    js-yaml:
+      specifier: ^4.1.0
+      version: 4.1.0
     tsup:
       specifier: ~8.3.5
       version: 8.3.5
@@ -77,6 +80,9 @@ importers:
       '@changesets/cli':
         specifier: 'catalog:'
         version: 2.28.1
+      js-yaml:
+        specifier: 'catalog:'
+        version: 4.1.0
       turbo:
         specifier: 'catalog:'
         version: 2.4.4
