@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@milaboratories/graph-maker/styles';
-import { PlAccordionSection, PlAlert, PlBlockPage, PlDropdownRef, PlNumberField, PlRow, PlTabs } from '@platforma-sdk/ui-vue';
+import { PlAccordionSection, PlAlert, PlBlockPage, PlDropdownMulti, PlDropdownRef, PlNumberField, PlRow, PlTabs } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 
 import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
@@ -15,10 +15,28 @@ const data = reactive({
   currentTab: 'umap',
 });
 
-const tabOptions = [
-  { label: 'UMAP', value: 'umap' },
-  { label: 't-SNE', value: 'tsne' },
-];
+const covariateOptions = computed(() => {
+  return app.model.outputs.metadataOptions?.map((v) => ({
+    value: v.ref,
+    label: v.label,
+  })) ?? [];
+});
+
+const tabOptions = computed(() => {
+  const baseOptions = [
+    { label: 'UMAP', value: 'umap' },
+    { label: 't-SNE', value: 'tsne' },
+  ];
+
+  if (app.model.outputs.hasBatchCorrection) {
+    baseOptions.push(
+      { label: 'UMAP (Harmony)', value: 'umap-harmony' },
+      { label: 't-SNE (Harmony)', value: 'tsne-harmony' },
+    );
+  }
+
+  return baseOptions;
+});
 
 function setInput(inputRef?: PlRef) {
   app.model.args.countsRef = inputRef;
@@ -80,21 +98,47 @@ const defaultOptions = computed((): PredefinedGraphOption<'scatterplot-umap'>[] 
       'pl7.app/rna-seq/tsne2',
     );
   }
+  if (data.currentTab === 'umap-harmony') {
+    return createDefaultOptions(
+      app.model.outputs.UMAPHarmonyPfPcols,
+      'pl7.app/rna-seq/umap1',
+      'pl7.app/rna-seq/umap2',
+    );
+  }
+  if (data.currentTab === 'tsne-harmony') {
+    return createDefaultOptions(
+      app.model.outputs.tSNEHarmonyPfPcols,
+      'pl7.app/rna-seq/tsne1',
+      'pl7.app/rna-seq/tsne2',
+    );
+  }
   return undefined;
 });
 
 /* Modify graph state, pframe and default options based on the selected tab */
 const graphState = computed({
-  get: () => data.currentTab === 'umap' ? app.model.ui.graphStateUMAP : app.model.ui.graphStateTSNE,
+  get: () => {
+    if (data.currentTab === 'umap') return app.model.ui.graphStateUMAP;
+    if (data.currentTab === 'tsne') return app.model.ui.graphStateTSNE;
+    if (data.currentTab === 'umap-harmony') return app.model.ui.graphStateUMAPHarmony;
+    if (data.currentTab === 'tsne-harmony') return app.model.ui.graphStateTSNEHarmony;
+    return app.model.ui.graphStateUMAP;
+  },
   set: (value) => {
-    if (data.currentTab === 'umap')
-      app.model.ui.graphStateUMAP = value;
-    else
-      app.model.ui.graphStateTSNE = value;
+    if (data.currentTab === 'umap') app.model.ui.graphStateUMAP = value;
+    else if (data.currentTab === 'tsne') app.model.ui.graphStateTSNE = value;
+    else if (data.currentTab === 'umap-harmony') app.model.ui.graphStateUMAPHarmony = value;
+    else if (data.currentTab === 'tsne-harmony') app.model.ui.graphStateTSNEHarmony = value;
   },
 });
 
-const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMAPPf : app.model.outputs.tSNEPf);
+const pFrame = computed(() => {
+  if (data.currentTab === 'umap') return app.model.outputs.UMAPPf;
+  if (data.currentTab === 'tsne') return app.model.outputs.tSNEPf;
+  if (data.currentTab === 'umap-harmony') return app.model.outputs.UMAPHarmonyPf;
+  if (data.currentTab === 'tsne-harmony') return app.model.outputs.tSNEHarmonyPf;
+  return app.model.outputs.UMAPPf;
+});
 
 /* Use both currentTab and pFrame in :key to force re-render the graph when either args (which changes the pFrame) or the tab changes */
 
@@ -120,6 +164,12 @@ const pFrame = computed(() => data.currentTab === 'umap' ? app.model.outputs.UMA
           clearable
           required
           @update:model-value="setInput"
+        />
+        <PlDropdownMulti
+          v-model="app.model.args.covariateRefs"
+          :options="covariateOptions"
+          :style="{ width: '320px' }"
+          label="Batch correction covariates (optional)"
         />
         <!-- Content hidden until you click ADVANCED SETTINGS -->
         <PlAccordionSection :style="{ width: '320px' }" label="ADVANCED SETTINGS">
