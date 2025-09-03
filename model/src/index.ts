@@ -14,10 +14,13 @@ import {
 export type UiState = {
   graphStateUMAP: GraphMakerState;
   graphStateTSNE: GraphMakerState;
+  graphStateUMAPHarmony: GraphMakerState;
+  graphStateTSNEHarmony: GraphMakerState;
 };
 
 export type BlockArgs = {
   countsRef?: PlRef;
+  covariateRefs: PlRef[];
   nPCs: number;
   nNeighbors: number;
   title?: string;
@@ -26,6 +29,7 @@ export type BlockArgs = {
 export const model = BlockModel.create()
 
   .withArgs<BlockArgs>({
+    covariateRefs: [],
     nPCs: 50,
     nNeighbors: 15,
   })
@@ -51,6 +55,26 @@ export const model = BlockModel.create()
         },
       },
     },
+    graphStateUMAPHarmony: {
+      title: 'UMAP (Harmony)',
+      template: 'dots',
+      currentTab: null,
+      layersSettings: {
+        dots: {
+          dotFill: '#99E099',
+        },
+      },
+    },
+    graphStateTSNEHarmony: {
+      title: 'tSNE (Harmony)',
+      template: 'dots',
+      currentTab: null,
+      layersSettings: {
+        dots: {
+          dotFill: '#99E099',
+        },
+      },
+    },
   })
 
   .argsValid((ctx) => ctx.args.countsRef !== undefined)
@@ -59,6 +83,10 @@ export const model = BlockModel.create()
     ctx.resultPool.getOptions((spec) => isPColumnSpec(spec)
       && spec.name === 'pl7.app/rna-seq/countMatrix' && spec.domain?.['pl7.app/rna-seq/normalized'] === 'false'
     , { includeNativeLabel: false, addLabelAsSuffix: true }),
+  )
+
+  .output('metadataOptions', (ctx) =>
+    ctx.resultPool.getOptions((spec) => isPColumnSpec(spec) && spec.name === 'pl7.app/metadata'),
   )
 
   .output('UMAPPf', (ctx): PFrameHandle | undefined => {
@@ -121,6 +149,70 @@ export const model = BlockModel.create()
     );
   })
 
+  .output('UMAPHarmonyPf', (ctx): PFrameHandle | undefined => {
+    const pCols = ctx.outputs?.resolve('UMAPHarmonyPf')?.getPColumns();
+    if (pCols === undefined) {
+      return undefined;
+    }
+
+    // enriching with upstream data
+    const upstream = ctx.resultPool
+      .getData()
+      .entries.map((v) => v.obj)
+      .filter(isPColumn)
+      .filter((column) => column.id.includes('metadata'));
+
+    return ctx.createPFrame([...pCols, ...upstream]);
+  })
+
+  .output('UMAPHarmonyPfPcols', (ctx) => {
+    const pCols = ctx.outputs?.resolve('UMAPHarmonyPf')?.getPColumns();
+    if (pCols === undefined)
+      return undefined;
+
+    return pCols.map(
+      (c) =>
+        ({
+          columnId: c.id,
+          spec: c.spec,
+        } satisfies PColumnIdAndSpec),
+    );
+  })
+
+  .output('tSNEHarmonyPf', (ctx): PFrameHandle | undefined => {
+    const pCols = ctx.outputs?.resolve('tSNEHarmonyPf')?.getPColumns();
+    if (pCols === undefined) {
+      return undefined;
+    }
+
+    // enriching with upstream data
+    const upstream = ctx.resultPool
+      .getData()
+      .entries.map((v) => v.obj)
+      .filter(isPColumn)
+      .filter((column) => column.id.includes('metadata'));
+
+    return ctx.createPFrame([...pCols, ...upstream]);
+  })
+
+  .output('tSNEHarmonyPfPcols', (ctx) => {
+    const pCols = ctx.outputs?.resolve('tSNEHarmonyPf')?.getPColumns();
+    if (pCols === undefined)
+      return undefined;
+
+    return pCols.map(
+      (c) =>
+        ({
+          columnId: c.id,
+          spec: c.spec,
+        } satisfies PColumnIdAndSpec),
+    );
+  })
+
+  .output('hasBatchCorrection', (ctx) => {
+    return ctx.args.covariateRefs.length > 0;
+  })
+
   .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
   .sections((_ctx) => ([
@@ -133,6 +225,6 @@ export const model = BlockModel.create()
       : 'Dimensionality Reduction',
   )
 
-  .done();
+  .done(2);
 
 export type BlockOutputs = InferOutputsType<typeof model>;

@@ -3,7 +3,7 @@
   "version": "1.7.2",
   "scripts": {
     "build": "pl-pkg build",
-    "prepublishOnly": "pl-pkg publish packages",
+    "prepublishOnly": "pl-pkg prepublish",
     "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv platforma-open*.tgz package.tgz",
     "changeset": "changeset",
     "version-packages": "changeset version"
@@ -35,6 +35,24 @@
           "cmd": [
             "python",
             "{pkg}/calculate_dim_reduction.py"
+          ]
+        }
+      },
+      "calculate-batchCorrection": {
+        "binary": {
+          "artifact": {
+            "type": "python",
+            "registry": "platforma-open",
+            "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.10",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "requirements.txt"
+            },
+            "root": "./src"
+          },
+          "cmd": [
+            "python",
+            "{pkg}/batch_correction.py"
           ]
         }
       }
