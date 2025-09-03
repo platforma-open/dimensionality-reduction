@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.software
 
+## 1.8.0
+
+### Minor Changes
+
+- 078da45: Add batch correction and update to latest SDK
+
 ## 1.7.2
 
 ### Patch Changes

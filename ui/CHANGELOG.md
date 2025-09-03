@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.dimensionality-reduction.ui
 
+## 1.10.0
+
+### Minor Changes
+
+- 078da45: Add batch correction and update to latest SDK
+
+### Patch Changes
+
+- Updated dependencies [078da45]
+  - @platforma-open/milaboratories.dimensionality-reduction.model@1.9.0
+
 ## 1.9.2
 
 ### Patch Changes
