@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.9.1
+
+### Patch Changes
+
+- 1759fcb: Allow empty workflow outputs
+
 ## 1.9.0
 
 ### Minor Changes
