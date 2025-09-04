@@ -150,7 +150,9 @@ export const model = BlockModel.create()
   })
 
   .output('UMAPHarmonyPf', (ctx): PFrameHandle | undefined => {
-    const pCols = ctx.outputs?.resolve('UMAPHarmonyPf')?.getPColumns();
+    const pCols = ctx.outputs?.resolve({
+      field: 'UMAPHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
+    })?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
@@ -166,7 +168,9 @@ export const model = BlockModel.create()
   })
 
   .output('UMAPHarmonyPfPcols', (ctx) => {
-    const pCols = ctx.outputs?.resolve('UMAPHarmonyPf')?.getPColumns();
+    const pCols = ctx.outputs?.resolve({
+      field: 'UMAPHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
+    })?.getPColumns();
     if (pCols === undefined)
       return undefined;
 
@@ -180,7 +184,9 @@ export const model = BlockModel.create()
   })
 
   .output('tSNEHarmonyPf', (ctx): PFrameHandle | undefined => {
-    const pCols = ctx.outputs?.resolve('tSNEHarmonyPf')?.getPColumns();
+    const pCols = ctx.outputs?.resolve({
+      field: 'tSNEHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
+    })?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
@@ -196,7 +202,9 @@ export const model = BlockModel.create()
   })
 
   .output('tSNEHarmonyPfPcols', (ctx) => {
-    const pCols = ctx.outputs?.resolve('tSNEHarmonyPf')?.getPColumns();
+    const pCols = ctx.outputs?.resolve({
+      field: 'tSNEHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
+    })?.getPColumns();
     if (pCols === undefined)
       return undefined;
 
