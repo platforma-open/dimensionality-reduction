@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.9.2
+
+### Patch Changes
+
+- 0893c92: Load main count matrix (now there is HVG matrix too)
+
 ## 1.9.1
 
 ### Patch Changes
