@@ -14,11 +14,14 @@ if not sys.warnoptions:
 
 
 import pandas as pd
+import polars as pl
 import scanpy as sc
 import argparse
 import os
 import numpy as np
 import time
+from scipy.sparse import coo_matrix
+
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -32,7 +35,7 @@ def log_message(message, status="INFO"):
 def load_and_process_data(file_path):
     log_message("Starting data loading and preprocessing", "STEP")
     # Load the data from the CSV file
-    raw_data_long = pd.read_csv(file_path)
+    raw_data_long = pl.read_csv(file_path)
     log_message(f"Loaded data from {file_path}, shape: {raw_data_long.shape}")
 
     # Validate and normalize column headers to support both legacy and new names
@@ -47,25 +50,37 @@ def load_and_process_data(file_path):
 
     # Normalize to legacy internal name 'Cell Barcode'
     if "Cell ID" in raw_data_long.columns and "Cell Barcode" not in raw_data_long.columns:
-        raw_data_long = raw_data_long.rename(columns={"Cell ID": "Cell Barcode"})
+        raw_data_long = raw_data_long.rename({"Cell ID": "Cell Barcode"})
 
     # Create a unique identifier for each cell
-    raw_data_long['UniqueCellId'] = raw_data_long['Sample'] + '_' + raw_data_long['Cell Barcode']
-
-    # Pivot the data to have genes as columns and UniqueCellId as rows
-    raw_data = raw_data_long.pivot_table(
-        index='UniqueCellId', 
-        columns='Ensembl Id', 
-        values='Raw gene expression', 
-        fill_value=0
+    raw_data_long = raw_data_long.with_columns(
+        (pl.col("Sample").cast(pl.Utf8) + "_" + pl.col("Cell Barcode").cast(pl.Utf8)).alias("UniqueCellId")
     )
 
+    # Create a sparse matrix
+    cell_ids = raw_data_long.get_column('UniqueCellId').unique().to_list()
+    gene_ids = raw_data_long.get_column('Ensembl Id').unique().to_list()
+
+    cell_map_df = pl.DataFrame({'UniqueCellId': cell_ids, 'row_idx': np.arange(len(cell_ids))})
+    gene_map_df = pl.DataFrame({'Ensembl Id': gene_ids, 'col_idx': np.arange(len(gene_ids))})
+
+    df_with_indices = raw_data_long.join(cell_map_df, on='UniqueCellId', how='left').join(gene_map_df, on='Ensembl Id', how='left')
+    
+    row_indices = df_with_indices.get_column('row_idx')
+    col_indices = df_with_indices.get_column('col_idx')
+    data = df_with_indices.get_column('Raw gene expression')
+
+    sparse_matrix = coo_matrix(
+        (data.to_numpy(), (row_indices.to_numpy(), col_indices.to_numpy())),
+        shape=(len(cell_ids), len(gene_ids))
+    ).tocsr()
+
     # Create AnnData object
-    adata = sc.AnnData(raw_data)
+    adata = sc.AnnData(sparse_matrix, obs=pd.DataFrame(index=cell_ids), var=pd.DataFrame(index=gene_ids))
 
     # Add SampleId and CellId metadata
-    adata.obs['Sample'] = [uid.split('_')[0] for uid in adata.obs_names]
-    adata.obs['Cell Barcode'] = [uid.split('_')[1] for uid in adata.obs_names]
+    adata.obs['Sample'] = [uid.split('_', 1)[0] for uid in adata.obs_names]
+    adata.obs['Cell Barcode'] = [uid.split('_', 1)[1] for uid in adata.obs_names]
 
     # Preprocessing steps: normalization, log transformation, and scaling
     log_message("Starting data normalization and transformation", "STEP")
@@ -95,8 +110,8 @@ def save_pca(adata, output_dir):
     pca_df = pca_df.melt(id_vars=['UniqueCellId'], var_name='PC', value_name='value')
 
     # Extract SampleId and CellId from UniqueCellId
-    pca_df['SampleId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_')[0])
-    pca_df['CellId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_')[1])
+    pca_df['SampleId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_', 1)[0])
+    pca_df['CellId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_', 1)[1])
 
     # Convert PC column to proper naming (e.g., "PC1", "PC2", etc.)
     pca_df['PC'] = pca_df['PC'].astype(int) + 1  # Convert to integer and shift index
@@ -126,8 +141,8 @@ def save_formatted_output(adata, embedding, embedding_name, output_dir):
         columns=[f'{embedding_name}{i+1}' for i in range(3)]
     )
     embedding_df = embedding_df.reset_index().rename(columns={'index': 'UniqueCellId'})
-    embedding_df['SampleId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_')[0])
-    embedding_df['CellId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_')[1])
+    embedding_df['SampleId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_', 1)[0])
+    embedding_df['CellId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_', 1)[1])
 
     # Reorder columns
     embedding_df = embedding_df[['UniqueCellId', 'SampleId', 'CellId', f'{embedding_name}1', f'{embedding_name}2', f'{embedding_name}3']]

@@ -1,10 +1,11 @@
 import pandas as pd
+import polars as pl
 import scanpy as sc
 import harmonypy as hm
 import argparse
 import os
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, coo_matrix
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Batch correction for scRNA-seq using ComBat (counts) and Harmony (embeddings)")
@@ -18,7 +19,7 @@ os.makedirs(args.output, exist_ok=True)
 
 # Load raw count data (long format)
 print("Loading raw counts...")
-counts_df = pd.read_csv(args.counts, dtype={"Sample": str, "Ensembl Id": str})
+counts_df = pl.read_csv(args.counts, dtypes={"Sample": pl.Utf8, "Ensembl Id": pl.Utf8})
 
 # Validate and normalize column headers to support both legacy and new names
 base_required = {"Sample", "Ensembl Id", "Raw gene expression"}
@@ -32,13 +33,13 @@ if missing_base or not has_cell_header:
 
 # Normalize to legacy internal name 'Cell Barcode'
 if "Cell ID" in counts_df.columns and "Cell Barcode" not in counts_df.columns:
-    counts_df = counts_df.rename(columns={"Cell ID": "Cell Barcode"})
+    counts_df = counts_df.rename({"Cell ID": "Cell Barcode"})
 
-counts_df["Cell Barcode"] = counts_df["Cell Barcode"].astype(str)
+counts_df = counts_df.with_columns(pl.col("Cell Barcode").cast(pl.Utf8))
 
 # Load metadata
 print("Loading metadata...")
-metadata_df = pd.read_csv(args.metadata, dtype=str)
+metadata_df = pl.read_csv(args.metadata, dtypes=pl.Utf8)
 
 # Ensure metadata contains at least two columns
 if metadata_df.shape[1] < 2:
@@ -54,22 +55,42 @@ print(f"✅ Using '{combat_column}' for ComBat correction")
 print(f"✅ Using {harmony_columns} for Harmony correction")
 
 # Merge metadata into count matrix
-counts_df = counts_df.merge(metadata_df, on="Sample", how="left")
+counts_df = counts_df.join(metadata_df, on="Sample", how="left")
+
+# Create a unique identifier for each cell
+counts_df = counts_df.with_columns(
+    (pl.col("Sample").cast(pl.Utf8) + "_" + pl.col("Cell Barcode").cast(pl.Utf8)).alias("UniqueCellId")
+)
 
 # Convert long format to cell x gene matrix
 print("Converting long format to cell-by-gene matrix...")
-cell_gene_matrix = counts_df.pivot_table(
-    index=["Sample", "Cell Barcode"], columns="Ensembl Id", values="Raw gene expression", aggfunc="sum", fill_value=0
-)
+cell_ids = counts_df.get_column('UniqueCellId').unique().to_list()
+gene_ids = counts_df.get_column('Ensembl Id').unique().to_list()
 
-# Convert to AnnData
+cell_map_df = pl.DataFrame({'UniqueCellId': cell_ids, 'row_idx': np.arange(len(cell_ids))})
+gene_map_df = pl.DataFrame({'Ensembl Id': gene_ids, 'col_idx': np.arange(len(gene_ids))})
+
+df_with_indices = counts_df.join(cell_map_df, on='UniqueCellId', how='left').join(gene_map_df, on='Ensembl Id', how='left')
+
+row_indices = df_with_indices.get_column('row_idx')
+col_indices = df_with_indices.get_column('col_idx')
+data = df_with_indices.get_column('Raw gene expression')
+
+sparse_matrix = coo_matrix(
+    (data.to_numpy(), (row_indices.to_numpy(), col_indices.to_numpy())),
+    shape=(len(cell_ids), len(gene_ids))
+).tocsr()
+
+# Create AnnData object
 print("Creating AnnData object...")
-adata = sc.AnnData(X=csr_matrix(cell_gene_matrix.values))  # Convert to sparse matrix
-adata.obs = cell_gene_matrix.index.to_frame(index=False)  # Preserve Sample & Cell Barcode
-adata.var_names = cell_gene_matrix.columns  # Gene names
+obs_df = df_with_indices.group_by("UniqueCellId").agg(
+    pl.first("Sample"),
+    pl.first("Cell Barcode"),
+    *[pl.first(col) for col in metadata_columns]
+).sort("UniqueCellId").to_pandas().set_index("UniqueCellId")
 
-# Merge metadata into AnnData object
-adata.obs = adata.obs.merge(metadata_df, on="Sample", how="left")
+
+adata = sc.AnnData(X=sparse_matrix, obs=obs_df, var=pd.DataFrame(index=gene_ids))
 
 # Ensure metadata columns are categorical
 for col in metadata_columns:
@@ -124,9 +145,9 @@ for col in metadata_columns:
 # **Branch 2: Apply Harmony for embedding correction**
 adata_harmony = adata.copy()  # Separate object for Harmony correction
 
-# Ensure UniqueCellId is set before running Harmony
-adata_harmony.obs["UniqueCellId"] = adata_harmony.obs["Sample"] + "_" + adata_harmony.obs["Cell Barcode"]
-adata_harmony.obs.set_index("UniqueCellId", inplace=True)
+# Ensure UniqueCellId is set before running Harmony - it's the index now
+# adata_harmony.obs["UniqueCellId"] = adata_harmony.obs["Sample"] + "_" + adata_harmony.obs["Cell Barcode"]
+# adata_harmony.obs.set_index("UniqueCellId", inplace=True)
 
 # Run PCA on raw counts (no ComBat)
 print("Running PCA on raw counts...")
@@ -144,10 +165,11 @@ adata_harmony.obsm["X_pca_harmony"] = harmony_results.Z_corr.T  # Transpose back
 print("Saving Harmony PCA embeddings...")
 harmony_df = pd.DataFrame(adata_harmony.obsm["X_pca_harmony"], index=adata_harmony.obs.index)
 harmony_df.columns = [f"PC{i+1}" for i in range(harmony_df.shape[1])]
-harmony_df = harmony_df.reset_index().melt(id_vars=["UniqueCellId"], var_name="PC", value_name="value")
+harmony_df = harmony_df.reset_index().rename(columns={'index': 'UniqueCellId'})
+harmony_df = harmony_df.melt(id_vars=["UniqueCellId"], var_name="PC", value_name="value")
 
-harmony_df["Sample"] = harmony_df["UniqueCellId"].apply(lambda x: x.split('_')[0])
-harmony_df["Cell Barcode"] = harmony_df["UniqueCellId"].apply(lambda x: x.split('_')[1])
+harmony_df["Sample"] = harmony_df["UniqueCellId"].apply(lambda x: x.split('_', 1)[0])
+harmony_df["Cell Barcode"] = harmony_df["UniqueCellId"].apply(lambda x: x.split('_', 1)[1])
 harmony_df = harmony_df[["Sample", "Cell Barcode", "PC", "value"]]
 harmony_df.to_csv(os.path.join(args.output, "harmony_results.csv"), index=False)
 
