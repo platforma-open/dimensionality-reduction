@@ -1,5 +1,14 @@
 # @platforma-open/milaboratories.dimensionality-reduction
 
+## 1.2.12
+
+### Patch Changes
+
+- Updated dependencies [8c1e2f0]
+  - @platforma-open/milaboratories.dimensionality-reduction.workflow@1.10.1
+  - @platforma-open/milaboratories.dimensionality-reduction.model@1.9.3
+  - @platforma-open/milaboratories.dimensionality-reduction.ui@1.10.3
+
 ## 1.2.11
 
 ### Patch Changes

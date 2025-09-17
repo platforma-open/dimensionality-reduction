@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.9.3
+
+### Patch Changes
+
+- 8c1e2f0: python, batch system and trace updates
+
 ## 1.9.2
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.10.1
+
+### Patch Changes
+
+- 8c1e2f0: python, batch system and trace updates
+- Updated dependencies [8c1e2f0]
+  - @platforma-open/milaboratories.dimensionality-reduction.software@1.8.1
+
 ## 1.10.0
 
 ### Minor Changes

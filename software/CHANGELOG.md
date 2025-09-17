@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.software
 
+## 1.8.1
+
+### Patch Changes
+
+- 8c1e2f0: python, batch system and trace updates
+
 ## 1.8.0
 
 ### Minor Changes
