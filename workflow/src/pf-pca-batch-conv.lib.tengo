@@ -1,15 +1,20 @@
 ll := import("@platforma-sdk/workflow-tengo:ll")
 
 getColumns := func(blockId, inputSpec) {
+  sampleSpec := copy(inputSpec.axesSpec[0])
+  cellBarcodeSpec := copy(inputSpec.axesSpec[1])
+  // Remove dense data annotation from axes
+  sampleSpec.annotations["pl7.app/graph/isDenseAxis"] = "false"
+  cellBarcodeSpec.annotations["pl7.app/graph/isDenseAxis"] = "false"
   return {
     "axes": [
       {
         "column": "Sample",
-        "spec": inputSpec.axesSpec[0]
+        "spec": sampleSpec
       },
       {
         "column": "Cell Barcode",
-        "spec": inputSpec.axesSpec[1]
+        "spec": cellBarcodeSpec
       },
       {
         "column": "PC",

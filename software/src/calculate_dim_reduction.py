@@ -163,11 +163,11 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     # Adaptive UMAP parameters
     log_message("Running UMAP", "STEP")
     if n_cells < 1000:
-        umap_n_neighbors = max(5, n_neighbors // 2)  # More local structure
+        umap_n_neighbors = max(5, n_neighbors // 4)  # More local structure
         min_dist = 0.01
         spread = 1.0
     else:
-        umap_n_neighbors = min(50, n_neighbors * 2)  # Emphasize global structure
+        umap_n_neighbors = min(50, n_neighbors)  # Emphasize global structure
         min_dist = 0.3
         spread = 1.5
 
