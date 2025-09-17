@@ -49,7 +49,7 @@ wf.body(func(args) {
 	dimReduction := exec.builder().
 		software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-dimRed")).
 		mem("32GiB").
-		cpu(1).
+		cpu(16).
 		addFile("rawCounts.csv", csvCounts).
 		arg("--file_path").arg("rawCounts.csv").
 		arg("--output_dir").arg(".").
@@ -87,6 +87,8 @@ wf.body(func(args) {
 
 		batchCorrection := exec.builder().
 			software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-batchCorrection")).
+			mem("32GiB").
+			cpu(16).
 			addFile("rawCounts.csv", csvCounts).
 			addFile("metadata.csv", csvCovariates).
 			arg("--counts").arg("rawCounts.csv").
@@ -104,28 +106,52 @@ wf.body(func(args) {
 
     	// Process harmony-corrected results
     	UMAPHarmonyDimImportParams := pfUMAPBatchConv.getColumns(blockId, inputSpec)
-    	UMAPHarmonyPf = xsv.importFile(batchCorrection.getFile("umap_dimensions.csv"), "csv", UMAPHarmonyDimImportParams, {splitDataAndSpec: true})
+    	UMAPHarmonyPf = xsv.importFile(batchCorrection.getFile("umap_dimensions.csv"), "csv", UMAPHarmonyDimImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
     	tSNEHarmonyDimImportParams := pfTSNEBatchConv.getColumns(blockId, inputSpec)
-    	tSNEHarmonyPf = xsv.importFile(batchCorrection.getFile("tsne_dimensions.csv"), "csv", tSNEHarmonyDimImportParams, {splitDataAndSpec: true})
+    	tSNEHarmonyPf = xsv.importFile(batchCorrection.getFile("tsne_dimensions.csv"), "csv", tSNEHarmonyDimImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
 		// batchCorrectedCountsImportParams := pfRawCountsConv.getColumns(blockId, inputSpec, species)
 		// batchCorrectedCountsPf := xsv.importFile(batchCorrection.getFile("batch_corrected_counts.csv"), "csv", batchCorrectedCountsImportParams)
 
     	PCAHarmonyDimImportParams := pfPCABatchConv.getColumns(blockId, inputSpec)
-    	PCAHarmonyPf = xsv.importFile(batchCorrection.getFile("harmony_results.csv"), "csv", PCAHarmonyDimImportParams, {splitDataAndSpec: true})
+    	PCAHarmonyPf = xsv.importFile(batchCorrection.getFile("harmony_results.csv"), "csv", PCAHarmonyDimImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
 		// batchCorrectedNormalizedCountsImportParams := pfNormCountsConv.getColumns(blockId, inputSpec, species)
 		// batchCorrectedNormalizedCountsPf := xsv.importFile(batchCorrection.getFile("batch_corrected_normalized_counts.csv"), "csv", batchCorrectedNormalizedCountsImportParams)
 	}
 
 	// Make trace with informative label
-	traceLabel := "Dimensionality Reduction (nPCs:" + string(nPCs) + ", nNeighbors:" + string(nNeighbors) + ")"
-	
+	traceLabel := "(nPCs:" + string(nPCs) + ", nNeighbors:" + string(nNeighbors) + ")"
+
 	// Make trace
 	trace := pSpec.makeTrace(inputSpec,
-		{type: "milaboratories.dimensionality-reduction", id: blockId, importance: 30, label: traceLabel}
+		{
+			type: "milaboratories.dimensionality-reduction", 
+			id: blockId, importance: 35, 
+			label: "Dimensionality Reduction"
+		},
+		{
+			type: "milaboratories.dimensionality-reduction", 
+			id: blockId, importance: 30, 
+			label: traceLabel
+		}
 	)
+	// Make batch correction trace
+	trace_batch := pSpec.makeTrace(inputSpec,
+		{
+			type: "milaboratories.dimensionality-reduction", 
+			id: blockId, importance: 35, 
+			label: "Batch Corrected Dimensionality Reduction"
+		},
+		{
+			type: "milaboratories.dimensionality-reduction", 
+			id: blockId, importance: 30, 
+			label: traceLabel
+		}
+	)
+
+	//////////// Outputs ////////////
 
 	// Build UMAP pFrame for outputs
 	umapOutputPf := pframes.pFrameBuilder()
@@ -151,19 +177,21 @@ wf.body(func(args) {
 	if len(args.covariateRefs) > 0 {
 		umapHarmonyOutputPf := pframes.pFrameBuilder()
 		for k, v in UMAPHarmonyPf {
-			umapHarmonyOutputPf.add(k, trace.inject(v.spec), v.data)
+			umapHarmonyOutputPf.add(k, trace_batch.inject(v.spec), v.data)
 		}
 		umapHarmonyOutputPf = umapHarmonyOutputPf.build()
 
 		tsneHarmonyOutputPf := pframes.pFrameBuilder()
 		for k, v in tSNEHarmonyPf {
-			tsneHarmonyOutputPf.add(k, trace.inject(v.spec), v.data)
+			tsneHarmonyOutputPf.add(k, trace_batch.inject(v.spec), v.data)
 		}
 		tsneHarmonyOutputPf = tsneHarmonyOutputPf.build()
 
 		outputs.UMAPHarmonyPf = pframes.exportFrame(umapHarmonyOutputPf)
 		outputs.tSNEHarmonyPf = pframes.exportFrame(tsneHarmonyOutputPf)
 	}
+
+	//////////// Exports ////////////
 
 	// Build combined exports pFrame
 	exportsPf := pframes.pFrameBuilder()
@@ -180,7 +208,7 @@ wf.body(func(args) {
 	if len(args.covariateRefs) > 0 {
 		for pf in [UMAPHarmonyPf, tSNEHarmonyPf] {
 			for k, v in pf {
-				exportsPf.add(string(i) + "_" + k, trace.inject(v.spec), v.data)
+				exportsPf.add(string(i) + "_" + k, trace_batch.inject(v.spec), v.data)
 				i = i + 1
 			}
 		}
