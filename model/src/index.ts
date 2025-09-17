@@ -31,7 +31,7 @@ export const model = BlockModel.create()
   .withArgs<BlockArgs>({
     covariateRefs: [],
     nPCs: 50,
-    nNeighbors: 15,
+    nNeighbors: 30,
   })
 
   .withUiState<UiState>({
