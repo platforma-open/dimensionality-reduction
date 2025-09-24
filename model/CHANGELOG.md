@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.9.4
+
+### Patch Changes
+
+- 7e91dd9: Support latest Cell Ranger version
+
 ## 1.9.3
 
 ### Patch Changes
