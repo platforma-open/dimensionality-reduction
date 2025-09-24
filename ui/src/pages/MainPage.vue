@@ -170,6 +170,7 @@ const pFrame = computed(() => {
           :options="covariateOptions"
           :style="{ width: '320px' }"
           label="Batch correction covariates (optional)"
+          placeholder="No covariates"
         />
         <!-- Content hidden until you click ADVANCED SETTINGS -->
         <PlAccordionSection :style="{ width: '320px' }" label="ADVANCED SETTINGS">
