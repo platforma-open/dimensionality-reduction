@@ -49,23 +49,24 @@ getColumns := func(blockId, inputSpec) {
             "pl7.app/label": "tSNE Dim2"
           }
         }
-      },
-      {
-        "column": "TSNE3",
-        "id": "tsne3",
-        "allowNA": false,
-        "spec": {
-          "name": "pl7.app/rna-seq/tsne3",
-          "valueType": "Double",
-          "domain": {
-            "pl7.app/blockId": blockId,
-            "pl7.app/rna-seq/batch-corrected": "false"
-          },
-          "annotations": {
-            "pl7.app/label": "tSNE Dim3"
-          }
-        }
       }
+      // ,
+      // {
+      //   "column": "TSNE3",
+      //   "id": "tsne3",
+      //   "allowNA": false,
+      //   "spec": {
+      //     "name": "pl7.app/rna-seq/tsne3",
+      //     "valueType": "Double",
+      //     "domain": {
+      //       "pl7.app/blockId": blockId,
+      //       "pl7.app/rna-seq/batch-corrected": "false"
+      //     },
+      //     "annotations": {
+      //       "pl7.app/label": "tSNE Dim3"
+      //     }
+      //   }
+      // }
       ],
     "storageFormat": "Binary",
     "partitionKeyLength": 1
