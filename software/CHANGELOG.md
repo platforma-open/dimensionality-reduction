@@ -1,5 +1,14 @@
 # @platforma-open/milaboratories.dimensionality-reduction.software
 
+## 1.8.2
+
+### Patch Changes
+
+- 39d2f9b: technical release
+- b7b0041: technical release
+- 925cfba: technical release
+- cdbee0e: technical release
+
 ## 1.8.1
 
 ### Patch Changes

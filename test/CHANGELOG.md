@@ -1,5 +1,14 @@
 # @platforma-open/milaboratories.dimensionality-reduction.test
 
+## 1.1.4
+
+### Patch Changes
+
+- 39d2f9b: technical release
+- b7b0041: technical release
+- 925cfba: technical release
+- cdbee0e: technical release
+
 ## 1.1.3
 
 ### Patch Changes
