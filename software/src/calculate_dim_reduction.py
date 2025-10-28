@@ -50,7 +50,9 @@ def load_and_process_data(file_path):
         raw_data_long = raw_data_long.rename(columns={"Cell ID": "Cell Barcode"})
 
     # Create a unique identifier for each cell
-    raw_data_long['UniqueCellId'] = raw_data_long['Sample'] + '_' + raw_data_long['Cell Barcode']
+    # Use a special separator that's unlikely to appear in barcodes
+    SEPARATOR = '|||'
+    raw_data_long['UniqueCellId'] = raw_data_long['Sample'] + SEPARATOR + raw_data_long['Cell Barcode']
 
     # Pivot the data to have genes as columns and UniqueCellId as rows
     raw_data = raw_data_long.pivot_table(
@@ -63,9 +65,9 @@ def load_and_process_data(file_path):
     # Create AnnData object
     adata = sc.AnnData(raw_data)
 
-    # Add SampleId and CellId metadata
-    adata.obs['Sample'] = [uid.split('_')[0] for uid in adata.obs_names]
-    adata.obs['Cell Barcode'] = [uid.split('_')[1] for uid in adata.obs_names]
+    # Add SampleId and CellId metadata (split on SEPARATOR instead of '_')
+    adata.obs['Sample'] = [uid.split(SEPARATOR, 1)[0] for uid in adata.obs_names]
+    adata.obs['Cell Barcode'] = [uid.split(SEPARATOR, 1)[1] for uid in adata.obs_names]
 
     # Preprocessing steps: normalization, log transformation, and scaling
     log_message("Starting data normalization and transformation", "STEP")
@@ -95,8 +97,9 @@ def save_pca(adata, output_dir):
     pca_df = pca_df.melt(id_vars=['UniqueCellId'], var_name='PC', value_name='value')
 
     # Extract SampleId and CellId from UniqueCellId
-    pca_df['SampleId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_')[0])
-    pca_df['CellId'] = pca_df['UniqueCellId'].apply(lambda x: x.split('_')[1])
+    SEPARATOR = '|||'
+    pca_df['SampleId'] = pca_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[0])
+    pca_df['CellId'] = pca_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[1])
 
     # Convert PC column to proper naming (e.g., "PC1", "PC2", etc.)
     pca_df['PC'] = pca_df['PC'].astype(int) + 1  # Convert to integer and shift index
@@ -126,8 +129,9 @@ def save_formatted_output(adata, embedding, embedding_name, output_dir):
         columns=[f'{embedding_name}{i+1}' for i in range(3)]
     )
     embedding_df = embedding_df.reset_index().rename(columns={'index': 'UniqueCellId'})
-    embedding_df['SampleId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_')[0])
-    embedding_df['CellId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split('_')[1])
+    SEPARATOR = '|||'
+    embedding_df['SampleId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[0])
+    embedding_df['CellId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[1])
 
     # Reorder columns
     embedding_df = embedding_df[['UniqueCellId', 'SampleId', 'CellId', f'{embedding_name}1', f'{embedding_name}2', f'{embedding_name}3']]
