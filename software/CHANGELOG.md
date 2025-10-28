@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.software
 
+## 1.9.0
+
+### Minor Changes
+
+- 413dc68: Update to support more barcodes
+
 ## 1.8.2
 
 ### Patch Changes
