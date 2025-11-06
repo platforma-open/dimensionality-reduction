@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.10.4
+
+### Patch Changes
+
+- b7d7046: Update to Parquet
+
 ## 1.10.3
 
 ### Patch Changes
