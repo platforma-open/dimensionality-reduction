@@ -1,0 +1,41 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs("umapDimensionsCsv", "tsneDimensionsCsv", "harmonyResultsCsv")
+
+self.body(func(args) {
+    // Input parameters
+    csvCounts := args.csvCounts
+    csvCovariates := args.csvCovariates
+    mem := args.mem
+    cpu := args.cpu
+
+    // Batch correction software execution
+    batchCorrection := exec.builder().
+        software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-batchCorrection")).
+        mem(mem).
+        cpu(cpu).
+        addFile("rawCounts.csv", csvCounts).
+        addFile("metadata.csv", csvCovariates).
+        arg("--counts").arg("rawCounts.csv").
+        arg("--metadata").arg("metadata.csv").
+        arg("--output").arg(".").
+        saveFile("umap_dimensions.csv").
+        saveFile("tsne_dimensions.csv").
+        saveFile("harmony_results.csv").
+        cache(24 * 60 * 60 * 1000).
+        run()
+
+    // Get result files
+    umapDimensionsCsv := batchCorrection.getFile("umap_dimensions.csv")
+    tsneDimensionsCsv := batchCorrection.getFile("tsne_dimensions.csv")
+    harmonyResultsCsv := batchCorrection.getFile("harmony_results.csv")
+
+    return {
+        umapDimensionsCsv: umapDimensionsCsv,
+        tsneDimensionsCsv: tsneDimensionsCsv,
+        harmonyResultsCsv: harmonyResultsCsv
+    }
+})
+

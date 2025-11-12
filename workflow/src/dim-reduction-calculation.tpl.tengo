@@ -1,0 +1,42 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs("umapResultsCsv", "tsneResultsCsv", "pcaResultsCsv")
+
+self.body(func(args) {
+    // Input parameters
+    csvCounts := args.csvCounts
+    nPCs := args.nPCs
+    nNeighbors := args.nNeighbors
+    mem := args.mem
+    cpu := args.cpu
+
+    // Dimensionality reduction software execution
+    dimReduction := exec.builder().
+        software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-dimRed")).
+        mem(mem).
+        cpu(cpu).
+        addFile("rawCounts.csv", csvCounts).
+        arg("--file_path").arg("rawCounts.csv").
+        arg("--output_dir").arg(".").
+        arg("--n_pcs").arg(string(nPCs)).
+        arg("--n_neighbors").arg(string(nNeighbors)).
+        saveFile("umap_results.csv").
+        saveFile("tsne_results.csv").
+        saveFile("pca_results.csv").
+        cache(24 * 60 * 60 * 1000).
+        run()
+
+    // Get result files
+    umapResultsCsv := dimReduction.getFile("umap_results.csv")
+    tsneResultsCsv := dimReduction.getFile("tsne_results.csv")
+    pcaResultsCsv := dimReduction.getFile("pca_results.csv")
+
+    return {
+        umapResultsCsv: umapResultsCsv,
+        tsneResultsCsv: tsneResultsCsv,
+        pcaResultsCsv: pcaResultsCsv
+    }
+})
+
