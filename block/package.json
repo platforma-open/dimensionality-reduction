@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.dimensionality-reduction",
-  "version": "1.2.16",
+  "version": "1.2.15",
   "scripts": {
     "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,vue}\"",
     "build": "rm -rf block-pack && block-tools pack",
@@ -26,9 +26,9 @@
       "title": "Dimensionality Reduction",
       "logo": "file:../logos/block-logo.png",
       "url": "https://github.com/platforma-open/dimensionality-reduction",
-      "docs": "https://github.com/platforma-open/dimensionality-reduction/docs",
+      "docs": "https://docs.platforma.bio/guides/sc-rna-seq-analysis/dimensionality-reduction/",
       "support": "mailto:support@milaboratories.com",
-      "description": "Takes single cell count matrix as input, performs dimensionality reduction using UMAP and tSNE methods.",
+      "description": "Performs dimensionality reduction on single-cell RNA-seq count matrices using PCA, t-SNE, and UMAP, with optional Harmony batch correction.",
       "longDescription": "file:../docs/description.md",
       "changelog": "file:../CHANGELOG.md",
       "tags": [
