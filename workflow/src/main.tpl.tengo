@@ -122,18 +122,13 @@ wf.body(func(args) {
 	}
 
 	// Make trace with informative label
-	traceLabel := "(nPCs:" + string(nPCs) + ", nNeighbors:" + string(nNeighbors) + ")"
+	traceLabel := "Dimensionality Reduction (nPCs:" + string(nPCs) + ", nNeighbors:" + string(nNeighbors) + ")"
 
 	// Make trace
 	trace := pSpec.makeTrace(inputSpec,
 		{
 			type: "milaboratories.dimensionality-reduction", 
 			id: blockId, importance: 35, 
-			label: "Dimensionality Reduction"
-		},
-		{
-			type: "milaboratories.dimensionality-reduction", 
-			id: blockId, importance: 30, 
 			label: traceLabel
 		}
 	)
@@ -142,12 +137,7 @@ wf.body(func(args) {
 		{
 			type: "milaboratories.dimensionality-reduction", 
 			id: blockId, importance: 35, 
-			label: "Batch Corrected Dimensionality Reduction"
-		},
-		{
-			type: "milaboratories.dimensionality-reduction", 
-			id: blockId, importance: 30, 
-			label: traceLabel
+			label: "Batch Corrected " + traceLabel
 		}
 	)
 
