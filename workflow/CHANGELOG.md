@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.11.0
+
+### Minor Changes
+
+- 914c7b0: Enable block deduplication and improve trace label
+
 ## 1.10.4
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.dimensionality-reduction
 
+## 1.3.0
+
+### Minor Changes
+
+- 914c7b0: Enable block deduplication and improve trace label
+
+### Patch Changes
+
+- Updated dependencies [914c7b0]
+  - @platforma-open/milaboratories.dimensionality-reduction.workflow@1.11.0
+
 ## 1.2.16
 
 ### Patch Changes
