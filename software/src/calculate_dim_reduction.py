@@ -21,6 +21,7 @@ import os
 import numpy as np
 import time
 from scipy.sparse import csr_matrix
+import pyarrow
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -33,19 +34,38 @@ def log_message(message, status="INFO"):
 
 def load_and_process_data(file_path):
     log_message("Starting data loading and preprocessing with Polars", "STEP")
-    # Load the data from the CSV file using Polars
-    raw_data_long_pl = pl.read_csv(file_path)
-    log_message(f"Loaded data from {file_path}, shape: {raw_data_long_pl.shape}")
+    
+    # MEMORY OPTIMIZATION: Read string columns with repeated values as categoricals
+    # Sample,Cell Barcode/Cell ID, Ensembl Id
+    
+    ## First, peek at the schema to see which columns exist (lazy operation, doesn't load data)
+    log_message("Scanning CSV schema to identify columns", "STEP")
+    temp_scan = pl.scan_csv(file_path)
+    file_schema = temp_scan.collect_schema()
+    column_names = set(file_schema.keys())
 
-    # Validate and normalize column headers to support both legacy and new names
+    ## Then, make sure we have the required columns
     base_required = {"Sample", "Ensembl Id", "Raw gene expression"}
     cell_headers = {"Cell Barcode", "Cell ID"}
 
-    missing_base = base_required - set(raw_data_long_pl.columns)
-    has_cell_header = any(h in raw_data_long_pl.columns for h in cell_headers)
+    missing_base = base_required - set(column_names)
+    has_cell_header = any(h in column_names for h in cell_headers)
     if missing_base or not has_cell_header:
         expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
-        raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(raw_data_long_pl.columns)}")
+        raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(column_names)}")
+    
+    ## Second, build schema_overrides only for columns that actually exist
+    schema_overrides = {}
+    categorical_candidates = ["Sample", "Ensembl Id", "Cell Barcode", "Cell ID"]
+    for col in categorical_candidates:
+        if col in column_names:
+            schema_overrides[col] = pl.Categorical
+    
+    log_message(f"Reading CSV with categorical types for: {list(schema_overrides.keys())}", "STEP")
+    
+    ## Finally, load the data with categorical types for repeated string columns
+    raw_data_long_pl = pl.read_csv(file_path, schema_overrides=schema_overrides)
+    log_message(f"Loaded data from {file_path}, shape: {raw_data_long_pl.shape}")
 
     # Normalize to legacy internal name 'Cell Barcode'
     if "Cell ID" in raw_data_long_pl.columns and "Cell Barcode" not in raw_data_long_pl.columns:
@@ -54,44 +74,53 @@ def load_and_process_data(file_path):
     # Create a unique identifier for each cell
     SEPARATOR = '|||'
     raw_data_long_pl = raw_data_long_pl.with_columns(
-        (pl.col('Sample').cast(str) + pl.lit(SEPARATOR) + pl.col('Cell Barcode').cast(str)).alias('UniqueCellId')
+        (pl.col('Sample').cast(str) + pl.lit(SEPARATOR) + pl.col('Cell Barcode').cast(str))
+        .cast(pl.Categorical)
+        .alias('UniqueCellId')
     )
     
     log_message("Creating sparse matrix from long format data", "STEP")
     
-    # Get unique cells and genes to define the matrix dimensions and create integer mappings
-    unique_cells_df = raw_data_long_pl.select('UniqueCellId').unique().with_row_index('row_code')
-    unique_genes_df = raw_data_long_pl.select('Ensembl Id').unique().with_row_index('col_code')
+    # Extract integer codes directly from categorical columns (much faster than join)
+    row_codes_raw = raw_data_long_pl['UniqueCellId'].to_physical().to_numpy()
+    col_codes_raw = raw_data_long_pl['Ensembl Id'].to_physical().to_numpy()
+    expression_values = raw_data_long_pl['Raw gene expression'].to_numpy()
     
-    # Join back to get integer codes for cells and genes
-    data_with_codes = raw_data_long_pl.join(
-        unique_cells_df, on='UniqueCellId'
-    ).join(
-        unique_genes_df, on='Ensembl Id'
-    )
-
-    # Extract columns for sparse matrix construction
-    row_codes = data_with_codes['row_code'].to_numpy()
-    col_codes = data_with_codes['col_code'].to_numpy()
-    expression_values = data_with_codes['Raw gene expression'].to_numpy()
+    # Remap codes to 0-indexed contiguous using np.unique (simplest approach)
+    _, row_codes = np.unique(row_codes_raw, return_inverse=True)
+    _, col_codes = np.unique(col_codes_raw, return_inverse=True)
+    row_codes = row_codes.astype(np.int32)
+    col_codes = col_codes.astype(np.int32)
+    
+    # Get unique categories for AnnData index (needed for obs and var)
+    unique_cell_ids = raw_data_long_pl['UniqueCellId'].unique().to_pandas()
+    unique_gene_ids = raw_data_long_pl['Ensembl Id'].unique().to_pandas()
+    
+    # Delete raw_data_long_pl to free memory - all needed data has been extracted (might need to implement new changes to actually release that memory)
+    del raw_data_long_pl, row_codes_raw, col_codes_raw
+    
+    n_unique_cells = len(unique_cell_ids)
+    n_unique_genes = len(unique_gene_ids)
     
     # Create the sparse matrix
     sparse_matrix = csr_matrix(
         (expression_values, (row_codes, col_codes)),
-        shape=(unique_cells_df.height, unique_genes_df.height)
+        shape=(n_unique_cells, n_unique_genes)
     )
 
     # Create AnnData object, which requires pandas DataFrames for obs and var
+    # Use to_pandas() instead of to_list() - more efficient for categoricals
     adata = sc.AnnData(
         sparse_matrix,
-        obs=pd.DataFrame(index=unique_cells_df['UniqueCellId'].to_list()),
-        var=pd.DataFrame(index=unique_genes_df['Ensembl Id'].to_list())
+        obs=pd.DataFrame(index=unique_cell_ids),
+        var=pd.DataFrame(index=unique_gene_ids)
     )
     log_message("Sparse matrix and AnnData object created", "DONE")
 
-    # Add SampleId and CellId metadata
-    adata.obs['Sample'] = [uid.split(SEPARATOR, 1)[0] for uid in adata.obs_names]
-    adata.obs['Cell Barcode'] = [uid.split(SEPARATOR, 1)[1] for uid in adata.obs_names]
+    # Add SampleId and CellId metadata using vectorized operations (much faster than list comprehensions)
+    obs_names_series = pd.Series(adata.obs_names)
+    adata.obs['Sample'] = obs_names_series.str.split(SEPARATOR, n=1, expand=True)[0].values
+    adata.obs['Cell Barcode'] = obs_names_series.str.split(SEPARATOR, n=1, expand=True)[1].values
 
     # Preprocessing steps: normalization, log transformation, finding HVGs, and scaling
     log_message("Starting data normalization and transformation", "STEP")
@@ -121,25 +150,35 @@ def save_pca(adata, output_dir):
     log_message("Saving PCA results", "STEP")
     pca_matrix = adata.obsm['X_pca']
     cell_ids = adata.obs_names
+    n_cells, n_pcs = pca_matrix.shape
 
-    # Convert to DataFrame and rename index
-    pca_df = pd.DataFrame(pca_matrix, index=cell_ids)
-    pca_df.index.name = 'UniqueCellId'  # Ensure the index has a name
-
-    # Reset index before melting
-    pca_df = pca_df.reset_index()
-
-    # Melt into long format
-    pca_df = pca_df.melt(id_vars=['UniqueCellId'], var_name='PC', value_name='value')
+    # MEMORY OPTIMIZATION: Build long format directly instead of using melt()
+    # This avoids creating a wide DataFrame which can be memory-intensive for many PCs
+    log_message(f"Building long format for {n_cells} cells and {n_pcs} PCs", "STEP")
+    
+    # Pre-allocate arrays for better memory efficiency
+    unique_cell_ids = np.repeat(cell_ids, n_pcs)
+    pc_indices = np.tile(np.arange(n_pcs), n_cells)
+    pc_values = pca_matrix.flatten()
+    
+    # Create DataFrame directly in long format
+    pca_df = pd.DataFrame({
+        'UniqueCellId': unique_cell_ids,
+        'PC': pc_indices,
+        'value': pc_values
+    })
 
     # Extract SampleId and CellId from UniqueCellId
     SEPARATOR = '|||'
-    pca_df['SampleId'] = pca_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[0])
-    pca_df['CellId'] = pca_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[1])
+    # Ensure UniqueCellId is string type and split explicitly
+    # This step is important since we load some string columns as categoricals
+    unique_cell_id_series = pca_df['UniqueCellId'].astype(str)
+    split_result = unique_cell_id_series.str.split(pat=SEPARATOR, n=1, expand=True, regex=False)
+    pca_df['SampleId'] = split_result[0]
+    pca_df['CellId'] = split_result[1]
 
-    # Convert PC column to proper naming (e.g., "PC1", "PC2", etc.)
-    pca_df['PC'] = pca_df['PC'].astype(int) + 1  # Convert to integer and shift index
-    pca_df['PC'] = pca_df['PC'].apply(lambda x: f'PC{x}')
+    # Convert PC column to proper naming (e.g., "PC1", "PC2", etc.) using vectorized operations
+    pca_df['PC'] = 'PC' + (pca_df['PC'].astype(int) + 1).astype(str)
 
     # Adjust column order to match other outputs
     pca_df = pca_df[['UniqueCellId', 'SampleId', 'CellId', 'PC', 'value']]
@@ -166,8 +205,12 @@ def save_formatted_output(adata, embedding, embedding_name, output_dir):
     )
     embedding_df = embedding_df.reset_index().rename(columns={'index': 'UniqueCellId'})
     SEPARATOR = '|||'
-    embedding_df['SampleId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[0])
-    embedding_df['CellId'] = embedding_df['UniqueCellId'].apply(lambda x: x.split(SEPARATOR, 1)[1])
+    # Ensure UniqueCellId is string type and split explicitly
+    # This step is important since we load some string columns as categoricals
+    unique_cell_id_series = embedding_df['UniqueCellId'].astype(str)
+    split_result = unique_cell_id_series.str.split(pat=SEPARATOR, n=1, expand=True, regex=False)
+    embedding_df['SampleId'] = split_result[0]
+    embedding_df['CellId'] = split_result[1]
 
     # Reorder columns
     embedding_df = embedding_df[['UniqueCellId', 'SampleId', 'CellId', f'{embedding_name}1', f'{embedding_name}2', f'{embedding_name}3']]
