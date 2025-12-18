@@ -87,14 +87,17 @@ def load_and_process_data(file_path):
     expression_values = raw_data_long_pl['Raw gene expression'].to_numpy()
     
     # Remap codes to 0-indexed contiguous using np.unique (simplest approach)
-    _, row_codes = np.unique(row_codes_raw, return_inverse=True)
-    _, col_codes = np.unique(col_codes_raw, return_inverse=True)
+    # unique_row_codes_phys contains the unique physical codes in sorted order
+    # row_codes contains the indices into unique_row_codes_phys
+    unique_row_codes_phys, row_codes = np.unique(row_codes_raw, return_inverse=True)
+    unique_col_codes_phys, col_codes = np.unique(col_codes_raw, return_inverse=True)
     row_codes = row_codes.astype(np.int32)
     col_codes = col_codes.astype(np.int32)
     
-    # Get unique categories for AnnData index (needed for obs and var)
-    unique_cell_ids = raw_data_long_pl['UniqueCellId'].unique().to_pandas()
-    unique_gene_ids = raw_data_long_pl['Ensembl Id'].unique().to_pandas()
+    # We must use the unique physical codes to gather the correct string labels from categories
+    # This ensures that the rows in the matrix match the labels in AnnData.obs_names
+    unique_cell_ids = raw_data_long_pl['UniqueCellId'].cat.get_categories().gather(unique_row_codes_phys).to_pandas()
+    unique_gene_ids = raw_data_long_pl['Ensembl Id'].cat.get_categories().gather(unique_col_codes_phys).to_pandas()
     
     # Delete raw_data_long_pl to free memory - all needed data has been extracted (might need to implement new changes to actually release that memory)
     del raw_data_long_pl, row_codes_raw, col_codes_raw
@@ -105,7 +108,8 @@ def load_and_process_data(file_path):
     # Create the sparse matrix
     sparse_matrix = csr_matrix(
         (expression_values, (row_codes, col_codes)),
-        shape=(n_unique_cells, n_unique_genes)
+        shape=(n_unique_cells, n_unique_genes),
+        dtype=np.float64
     )
 
     # Create AnnData object, which requires pandas DataFrames for obs and var
@@ -128,15 +132,18 @@ def load_and_process_data(file_path):
     sc.pp.log1p(adata)
 
     log_message("Finding highly variable genes", "STEP")
-    sc.pp.highly_variable_genes(adata, n_top_genes=2000)
+    sc.pp.highly_variable_genes(adata, n_top_genes=3000)
     log_message("Highly variable genes found", "DONE")
 
     # Subset the data to the most variable genes
     adata.raw = adata  # Store the full dataset
-    adata = adata[:, adata.var.highly_variable]
+    adata = adata[:, adata.var.highly_variable].copy()
 
     log_message("Scaling data to unit variance and zero mean", "STEP")
-    sc.pp.scale(adata, max_value=10, zero_center=False)
+    # Densify the small subset to allow full centering and scaling
+    # This significantly improves PCA and UMAP quality.
+    adata.X = adata.X.toarray()
+    sc.pp.scale(adata, max_value=10)
     log_message("Scaling completed", "DONE")
 
     log_message("Normalization and transformation completed", "DONE")
@@ -227,7 +234,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
 
     # Run PCA
     log_message("Running PCA", "STEP")
-    sc.tl.pca(adata, n_comps=n_pcs, svd_solver='arpack')
+    sc.tl.pca(adata, n_comps=n_pcs)
 
     # Save PCA results in the required long format
     save_pca(adata, output_dir)
