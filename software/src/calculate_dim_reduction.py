@@ -14,11 +14,13 @@ if not sys.warnoptions:
 
 
 import pandas as pd
+import polars as pl
 import scanpy as sc
 import argparse
 import os
 import numpy as np
 import time
+from scipy.sparse import csr_matrix
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -30,52 +32,86 @@ def log_message(message, status="INFO"):
 
 
 def load_and_process_data(file_path):
-    log_message("Starting data loading and preprocessing", "STEP")
-    # Load the data from the CSV file
-    raw_data_long = pd.read_csv(file_path)
-    log_message(f"Loaded data from {file_path}, shape: {raw_data_long.shape}")
+    log_message("Starting data loading and preprocessing with Polars", "STEP")
+    # Load the data from the CSV file using Polars
+    raw_data_long_pl = pl.read_csv(file_path)
+    log_message(f"Loaded data from {file_path}, shape: {raw_data_long_pl.shape}")
 
     # Validate and normalize column headers to support both legacy and new names
     base_required = {"Sample", "Ensembl Id", "Raw gene expression"}
     cell_headers = {"Cell Barcode", "Cell ID"}
 
-    missing_base = base_required - set(raw_data_long.columns)
-    has_cell_header = any(h in raw_data_long.columns for h in cell_headers)
+    missing_base = base_required - set(raw_data_long_pl.columns)
+    has_cell_header = any(h in raw_data_long_pl.columns for h in cell_headers)
     if missing_base or not has_cell_header:
         expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
-        raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(raw_data_long.columns)}")
+        raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(raw_data_long_pl.columns)}")
 
     # Normalize to legacy internal name 'Cell Barcode'
-    if "Cell ID" in raw_data_long.columns and "Cell Barcode" not in raw_data_long.columns:
-        raw_data_long = raw_data_long.rename(columns={"Cell ID": "Cell Barcode"})
+    if "Cell ID" in raw_data_long_pl.columns and "Cell Barcode" not in raw_data_long_pl.columns:
+        raw_data_long_pl = raw_data_long_pl.rename({"Cell ID": "Cell Barcode"})
 
     # Create a unique identifier for each cell
-    # Use a special separator that's unlikely to appear in barcodes
     SEPARATOR = '|||'
-    raw_data_long['UniqueCellId'] = raw_data_long['Sample'] + SEPARATOR + raw_data_long['Cell Barcode']
-
-    # Pivot the data to have genes as columns and UniqueCellId as rows
-    raw_data = raw_data_long.pivot_table(
-        index='UniqueCellId', 
-        columns='Ensembl Id', 
-        values='Raw gene expression', 
-        fill_value=0
+    raw_data_long_pl = raw_data_long_pl.with_columns(
+        (pl.col('Sample').cast(str) + pl.lit(SEPARATOR) + pl.col('Cell Barcode').cast(str)).alias('UniqueCellId')
+    )
+    
+    log_message("Creating sparse matrix from long format data", "STEP")
+    
+    # Get unique cells and genes to define the matrix dimensions and create integer mappings
+    unique_cells_df = raw_data_long_pl.select('UniqueCellId').unique().with_row_index('row_code')
+    unique_genes_df = raw_data_long_pl.select('Ensembl Id').unique().with_row_index('col_code')
+    
+    # Join back to get integer codes for cells and genes
+    data_with_codes = raw_data_long_pl.join(
+        unique_cells_df, on='UniqueCellId'
+    ).join(
+        unique_genes_df, on='Ensembl Id'
     )
 
-    # Create AnnData object
-    adata = sc.AnnData(raw_data)
+    # Extract columns for sparse matrix construction
+    row_codes = data_with_codes['row_code'].to_numpy()
+    col_codes = data_with_codes['col_code'].to_numpy()
+    expression_values = data_with_codes['Raw gene expression'].to_numpy()
+    
+    # Create the sparse matrix
+    sparse_matrix = csr_matrix(
+        (expression_values, (row_codes, col_codes)),
+        shape=(unique_cells_df.height, unique_genes_df.height)
+    )
 
-    # Add SampleId and CellId metadata (split on SEPARATOR instead of '_')
+    # Create AnnData object, which requires pandas DataFrames for obs and var
+    adata = sc.AnnData(
+        sparse_matrix,
+        obs=pd.DataFrame(index=unique_cells_df['UniqueCellId'].to_list()),
+        var=pd.DataFrame(index=unique_genes_df['Ensembl Id'].to_list())
+    )
+    log_message("Sparse matrix and AnnData object created", "DONE")
+
+    # Add SampleId and CellId metadata
     adata.obs['Sample'] = [uid.split(SEPARATOR, 1)[0] for uid in adata.obs_names]
     adata.obs['Cell Barcode'] = [uid.split(SEPARATOR, 1)[1] for uid in adata.obs_names]
 
-    # Preprocessing steps: normalization, log transformation, and scaling
+    # Preprocessing steps: normalization, log transformation, finding HVGs, and scaling
     log_message("Starting data normalization and transformation", "STEP")
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
-    sc.pp.scale(adata, max_value=10)
-    log_message("Normalization and normalization completed", "DONE")
 
+    log_message("Finding highly variable genes", "STEP")
+    sc.pp.highly_variable_genes(adata, n_top_genes=2000)
+    log_message("Highly variable genes found", "DONE")
+
+    # Subset the data to the most variable genes
+    adata.raw = adata  # Store the full dataset
+    adata = adata[:, adata.var.highly_variable]
+
+    log_message("Scaling data to unit variance and zero mean", "STEP")
+    sc.pp.scale(adata, max_value=10, zero_center=False)
+    log_message("Scaling completed", "DONE")
+
+    log_message("Normalization and transformation completed", "DONE")
+    
     return adata
 
 
@@ -148,7 +184,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
 
     # Run PCA
     log_message("Running PCA", "STEP")
-    sc.tl.pca(adata, n_comps=n_pcs)
+    sc.tl.pca(adata, n_comps=n_pcs, svd_solver='arpack')
 
     # Save PCA results in the required long format
     save_pca(adata, output_dir)
