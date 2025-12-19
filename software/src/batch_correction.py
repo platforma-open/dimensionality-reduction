@@ -1,13 +1,20 @@
 import pandas as pd
+import polars as pl
 import scanpy as sc
 import harmonypy as hm
 import argparse
 import os
 import numpy as np
+import time
 from scipy.sparse import csr_matrix
 
+def log_message(message, status="INFO"):
+    """Logs messages in a structured format."""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] [{status}] {message}")
+
 # Argument parsing
-parser = argparse.ArgumentParser(description="Batch correction for scRNA-seq using ComBat (counts) and Harmony (embeddings)")
+parser = argparse.ArgumentParser(description="Batch correction for scRNA-seq using Harmony (embeddings)")
 parser.add_argument("--counts", help="Path to raw counts CSV file", required=True)
 parser.add_argument("--metadata", help="Path to metadata CSV file", required=True)
 parser.add_argument("--output", help="Path to output directory", required=True)
@@ -16,62 +23,106 @@ args = parser.parse_args()
 # Create output directory if it doesn't exist
 os.makedirs(args.output, exist_ok=True)
 
-# Load raw count data (long format)
-print("Loading raw counts...")
-counts_df = pd.read_csv(args.counts, dtype={"Sample": str, "Ensembl Id": str})
+# 1. LOAD DATA WITH POLARS & CATEGORICAL OPTIMIZATION
+log_message("Loading raw counts with Polars and Categorical optimization", "STEP")
 
-# Validate and normalize column headers to support both legacy and new names
+# Peek schema to handle flexible headers and identify columns for Categorical casting
+temp_scan = pl.scan_csv(args.counts)
+file_schema = temp_scan.collect_schema()
+column_names = set(file_schema.keys())
+
+## Then, make sure we have the required columns
 base_required = {"Sample", "Ensembl Id", "Raw gene expression"}
 cell_headers = {"Cell Barcode", "Cell ID"}
 
-missing_base = base_required - set(counts_df.columns)
-has_cell_header = any(h in counts_df.columns for h in cell_headers)
+missing_base = base_required - set(column_names)
+has_cell_header = any(h in column_names for h in cell_headers)
 if missing_base or not has_cell_header:
     expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
-    raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(counts_df.columns)}")
+    raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(column_names)}")
+
+## Second, build schema_overrides only for columns that actually exist
+schema_overrides = {}
+categorical_candidates = ["Sample", "Ensembl Id", "Cell Barcode", "Cell ID"]
+for col in categorical_candidates:
+    if col in column_names:
+        schema_overrides[col] = pl.Categorical
+
+counts_pl = pl.read_csv(args.counts, schema_overrides=schema_overrides)
 
 # Normalize to legacy internal name 'Cell Barcode'
-if "Cell ID" in counts_df.columns and "Cell Barcode" not in counts_df.columns:
-    counts_df = counts_df.rename(columns={"Cell ID": "Cell Barcode"})
+if "Cell ID" in counts_pl.columns and "Cell Barcode" not in counts_pl.columns:
+    counts_pl = counts_pl.rename({"Cell ID": "Cell Barcode"})
 
-counts_df["Cell Barcode"] = counts_df["Cell Barcode"].astype(str)
+# Create a unique identifier for each cell
+SEPARATOR = '|||'
+counts_pl = counts_pl.with_columns(
+    (pl.col('Sample').cast(str) + pl.lit(SEPARATOR) + pl.col('Cell Barcode').cast(str))
+    .cast(pl.Categorical)
+    .alias('UniqueCellId')
+)
 
-# Load metadata
-print("Loading metadata...")
+log_message("Creating sparse matrix from long format data", "STEP")
+
+# Extract integer codes directly from categorical columns (much faster than join)
+row_codes_raw = counts_pl['UniqueCellId'].to_physical().to_numpy()
+col_codes_raw = counts_pl['Ensembl Id'].to_physical().to_numpy()
+# Use float32 for expression values (Scanpy standard)
+expression_values = counts_pl['Raw gene expression'].cast(pl.Float32).to_numpy()
+
+# Remap codes to 0-indexed contiguous using np.unique
+unique_row_codes_phys, row_codes = np.unique(row_codes_raw, return_inverse=True)
+unique_col_codes_phys, col_codes = np.unique(col_codes_raw, return_inverse=True)
+row_codes = row_codes.astype(np.int32)
+col_codes = col_codes.astype(np.int32)
+
+# QUALITY FIX: Synchronize labels with the remapped codes
+# Index the categorical mapping using the unique physical codes found in the data
+unique_cell_ids = counts_pl['UniqueCellId'].cat.get_categories().gather(unique_row_codes_phys).to_pandas()
+unique_gene_ids = counts_pl['Ensembl Id'].cat.get_categories().gather(unique_col_codes_phys).to_pandas()
+
+# Delete Polars objects to free memory - all needed data has been extracted
+del counts_pl, row_codes_raw, col_codes_raw
+
+n_cells = len(unique_cell_ids)
+n_genes = len(unique_gene_ids)
+
+# Vectorized extraction of Sample and Cell Barcode for obs (more efficient than doing it later)
+obs_df = pd.DataFrame(index=unique_cell_ids)
+split_ids = pd.Series(unique_cell_ids.values).str.split(SEPARATOR, n=1, expand=True, regex=False)
+obs_df['Sample'] = split_ids[0].values
+obs_df['Cell Barcode'] = split_ids[1].values
+
+# Create the sparse matrix
+adata = sc.AnnData(
+    X=csr_matrix((expression_values, (row_codes, col_codes)), shape=(n_cells, n_genes), dtype=np.float32),
+    obs=obs_df,
+    var=pd.DataFrame(index=unique_gene_ids)
+)
+log_message(f"AnnData object created: {n_cells} cells x {n_genes} genes", "DONE")
+
+# 3. LOAD & MERGE METADATA
+log_message("Loading and merging metadata", "STEP")
 metadata_df = pd.read_csv(args.metadata, dtype=str)
 
 # Ensure metadata contains at least two columns
 if metadata_df.shape[1] < 2:
     raise ValueError("Metadata must have at least two columns: 'Sample' and at least one metadata column.")
 
-# Detect metadata columns
-metadata_columns = metadata_df.columns[1:].tolist()  # Exclude "Sample"
-combat_column = metadata_columns[0]  # First column for ComBat
-harmony_columns = metadata_columns  # Use all columns for Harmony
+metadata_columns = metadata_df.columns[1:].tolist() # Exclude "Sample"
+combat_column = metadata_columns[0]
+harmony_columns = metadata_columns
 
-print(f"✅ Detected metadata columns: {metadata_columns}")
-print(f"✅ Using '{combat_column}' for ComBat correction")
-print(f"✅ Using {harmony_columns} for Harmony correction")
+log_message(f"Detected metadata columns: {metadata_columns}", "INFO")
+log_message(f"Using '{combat_column}' for ComBat correction", "INFO")
+log_message(f"Using {harmony_columns} for Harmony correction", "INFO")
 
-# Merge metadata into count matrix
-counts_df = counts_df.merge(metadata_df, on="Sample", how="left")
-
-# Convert long format to cell x gene matrix
-print("Converting long format to cell-by-gene matrix...")
-cell_gene_matrix = counts_df.pivot_table(
-    index=["Sample", "Cell Barcode"], columns="Ensembl Id", values="Raw gene expression", aggfunc="sum", fill_value=0
-)
-
-# Convert to AnnData
-print("Creating AnnData object...")
-adata = sc.AnnData(X=csr_matrix(cell_gene_matrix.values))  # Convert to sparse matrix
-adata.obs = cell_gene_matrix.index.to_frame(index=False)  # Preserve Sample & Cell Barcode
-adata.var_names = cell_gene_matrix.columns  # Gene names
-
-# Merge metadata into AnnData object
+# Merge metadata into adata.obs
+# Sample column already exists in obs, so merge will align correctly
 adata.obs = adata.obs.merge(metadata_df, on="Sample", how="left")
+adata.obs.index = unique_cell_ids # Restore the UniqueCellId index lost during merge
 
-# Ensure metadata columns are categorical
+# Ensure metadata columns are categorical for Harmony
 for col in metadata_columns:
     adata.obs[col] = adata.obs[col].fillna("Unknown").astype("category")
 
@@ -124,10 +175,6 @@ for col in metadata_columns:
 # **Branch 2: Apply Harmony for embedding correction**
 adata_harmony = adata.copy()  # Separate object for Harmony correction
 
-# Ensure UniqueCellId is set before running Harmony
-adata_harmony.obs["UniqueCellId"] = adata_harmony.obs["Sample"] + "_" + adata_harmony.obs["Cell Barcode"]
-adata_harmony.obs.set_index("UniqueCellId", inplace=True)
-
 # Run PCA on raw counts (no ComBat)
 print("Running PCA on raw counts...")
 sc.pp.normalize_total(adata_harmony, target_sum=1e4)
@@ -137,17 +184,21 @@ sc.tl.pca(adata_harmony, n_comps=100)
 
 # Apply Harmony with multiple metadata columns
 print(f"Applying Harmony batch correction using {harmony_columns}...")
+# Harmony expects cells as columns, so we transpose the PCA matrix (n_cells x n_pcs -> n_pcs x n_cells)
 harmony_results = hm.run_harmony(np.array(adata_harmony.obsm["X_pca"]).T, adata_harmony.obs, harmony_columns, max_iter_harmony=50)
-adata_harmony.obsm["X_pca_harmony"] = harmony_results.Z_corr.T  # Transpose back
+adata_harmony.obsm["X_pca_harmony"] = harmony_results.Z_corr.T  # Transpose back to n_cells x n_pcs
 
 # Save Harmony-corrected PCA embeddings
 print("Saving Harmony PCA embeddings...")
 harmony_df = pd.DataFrame(adata_harmony.obsm["X_pca_harmony"], index=adata_harmony.obs.index)
 harmony_df.columns = [f"PC{i+1}" for i in range(harmony_df.shape[1])]
-harmony_df = harmony_df.reset_index().melt(id_vars=["UniqueCellId"], var_name="PC", value_name="value")
+harmony_df = harmony_df.reset_index().rename(columns={'index': 'UniqueCellId'})
+harmony_df = harmony_df.melt(id_vars=["UniqueCellId"], var_name="PC", value_name="value")
 
-harmony_df["Sample"] = harmony_df["UniqueCellId"].apply(lambda x: x.split('_')[0])
-harmony_df["Cell Barcode"] = harmony_df["UniqueCellId"].apply(lambda x: x.split('_')[1])
+# Use SEPARATOR and regex=False for metadata integrity
+split_harmony = harmony_df["UniqueCellId"].str.split(SEPARATOR, n=1, expand=True, regex=False)
+harmony_df["Sample"] = split_harmony[0]
+harmony_df["Cell Barcode"] = split_harmony[1]
 harmony_df = harmony_df[["Sample", "Cell Barcode", "PC", "value"]]
 harmony_df.to_csv(os.path.join(args.output, "harmony_results.csv"), index=False)
 
@@ -173,5 +224,4 @@ tsne_df["Sample"] = adata_harmony.obs["Sample"].values
 tsne_df["Cell Barcode"] = adata_harmony.obs["Cell Barcode"].values
 tsne_df = tsne_df[["Sample", "Cell Barcode", "tSNE1", "tSNE2"]]  # Ensure correct order
 tsne_df.to_csv(os.path.join(args.output, "tsne_dimensions.csv"), index=False)
-
 print("✅ All outputs saved successfully!")
