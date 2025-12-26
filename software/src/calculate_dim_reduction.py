@@ -86,21 +86,20 @@ def load_and_process_data(file_path):
     col_codes_raw = raw_data_long_pl['Ensembl Id'].to_physical().to_numpy()
     expression_values = raw_data_long_pl['Raw gene expression'].to_numpy()
     
-    # Remap codes to 0-indexed contiguous using np.unique (simplest approach)
-    # unique_row_codes_phys contains the unique physical codes in sorted order
-    # row_codes contains the indices into unique_row_codes_phys
-    unique_row_codes_phys, row_codes = np.unique(row_codes_raw, return_inverse=True)
-    unique_col_codes_phys, col_codes = np.unique(col_codes_raw, return_inverse=True)
-    row_codes = row_codes.astype(np.int32)
-    col_codes = col_codes.astype(np.int32)
+    # Remap codes to 0-indexed contiguous using np.unique (efficient integer-based mapping)
+    u_row_phys, row_idx = np.unique(row_codes_raw, return_inverse=True)
+    u_col_phys, col_idx = np.unique(col_codes_raw, return_inverse=True)
+
+    # Map labels to sorted ranks and get sorted unique IDs (efficiently processing only unique labels)
+    unique_cell_ids, row_map = np.unique(raw_data_long_pl['UniqueCellId'].cat.get_categories().gather(u_row_phys).to_numpy(), return_inverse=True)
+    unique_gene_ids, col_map = np.unique(raw_data_long_pl['Ensembl Id'].cat.get_categories().gather(u_col_phys).to_numpy(), return_inverse=True)
+
+    # Final row and column codes are the mapped indices
+    row_codes = row_map[row_idx].astype(np.int32)
+    col_codes = col_map[col_idx].astype(np.int32)
     
-    # We must use the unique physical codes to gather the correct string labels from categories
-    # This ensures that the rows in the matrix match the labels in AnnData.obs_names
-    unique_cell_ids = raw_data_long_pl['UniqueCellId'].cat.get_categories().gather(unique_row_codes_phys).to_pandas()
-    unique_gene_ids = raw_data_long_pl['Ensembl Id'].cat.get_categories().gather(unique_col_codes_phys).to_pandas()
-    
-    # Delete raw_data_long_pl to free memory - all needed data has been extracted (might need to implement new changes to actually release that memory)
-    del raw_data_long_pl, row_codes_raw, col_codes_raw
+    # Delete intermediate objects to free memory
+    del raw_data_long_pl, row_codes_raw, col_codes_raw, u_row_phys, u_col_phys, row_idx, col_idx, row_map, col_map
     
     n_unique_cells = len(unique_cell_ids)
     n_unique_genes = len(unique_gene_ids)
@@ -140,9 +139,6 @@ def load_and_process_data(file_path):
     adata = adata[:, adata.var.highly_variable].copy()
 
     log_message("Scaling data to unit variance and zero mean", "STEP")
-    # Densify the small subset to allow full centering and scaling
-    # This significantly improves PCA and UMAP quality.
-    adata.X = adata.X.toarray()
     sc.pp.scale(adata, max_value=10)
     log_message("Scaling completed", "DONE")
 
@@ -234,7 +230,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
 
     # Run PCA
     log_message("Running PCA", "STEP")
-    sc.tl.pca(adata, n_comps=n_pcs)
+    sc.tl.pca(adata, n_comps=n_pcs, random_state=0)
 
     # Save PCA results in the required long format
     save_pca(adata, output_dir)
@@ -246,7 +242,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
     learning_rate = max(50, min(200, n_cells / 12))   # Adaptive learning rate
 
     # Run t-SNE with adaptive parameters
-    sc.tl.tsne(adata, n_pcs=n_pcs, perplexity=perplexity, early_exaggeration=12.0, learning_rate=learning_rate)
+    sc.tl.tsne(adata, n_pcs=n_pcs, perplexity=perplexity, early_exaggeration=12.0, learning_rate=learning_rate, random_state=0)
     tsne_results = adata.obsm['X_tsne']
     save_formatted_output(adata, tsne_results, 'TSNE', output_dir)
 
@@ -262,8 +258,8 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
         spread = 1.5
 
     # Run UMAP with adaptive parameters
-    sc.pp.neighbors(adata, n_neighbors=umap_n_neighbors, n_pcs=n_pcs)
-    sc.tl.umap(adata, n_components=3, min_dist=min_dist, spread=spread)
+    sc.pp.neighbors(adata, n_neighbors=umap_n_neighbors, n_pcs=n_pcs, random_state=0)
+    sc.tl.umap(adata, n_components=3, min_dist=min_dist, spread=spread, random_state=0)
     umap_results = adata.obsm['X_umap']
     save_formatted_output(adata, umap_results, 'UMAP', output_dir)
     log_message("Dimensionality reduction completed", "DONE")
@@ -280,6 +276,7 @@ def parse_arguments():
 
 def main():
     log_message("Starting block execution", "INFO")
+    np.random.seed(0)
     args = parse_arguments()
     adata = load_and_process_data(args.file_path)
     run_dimensionality_reduction(adata, args.output_dir, args.n_pcs, args.n_neighbors)
