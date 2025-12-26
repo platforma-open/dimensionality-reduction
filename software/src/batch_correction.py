@@ -8,6 +8,8 @@ import numpy as np
 import time
 from scipy.sparse import csr_matrix
 
+np.random.seed(0)
+
 def log_message(message, status="INFO"):
     """Logs messages in a structured format."""
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -70,26 +72,27 @@ col_codes_raw = counts_pl['Ensembl Id'].to_physical().to_numpy()
 # Use float32 for expression values (Scanpy standard)
 expression_values = counts_pl['Raw gene expression'].cast(pl.Float32).to_numpy()
 
-# Remap codes to 0-indexed contiguous using np.unique
-unique_row_codes_phys, row_codes = np.unique(row_codes_raw, return_inverse=True)
-unique_col_codes_phys, col_codes = np.unique(col_codes_raw, return_inverse=True)
-row_codes = row_codes.astype(np.int32)
-col_codes = col_codes.astype(np.int32)
+# Remap codes to 0-indexed contiguous using np.unique (efficient integer-based mapping)
+u_row_phys, row_idx = np.unique(row_codes_raw, return_inverse=True)
+u_col_phys, col_idx = np.unique(col_codes_raw, return_inverse=True)
 
-# QUALITY FIX: Synchronize labels with the remapped codes
-# Index the categorical mapping using the unique physical codes found in the data
-unique_cell_ids = counts_pl['UniqueCellId'].cat.get_categories().gather(unique_row_codes_phys).to_pandas()
-unique_gene_ids = counts_pl['Ensembl Id'].cat.get_categories().gather(unique_col_codes_phys).to_pandas()
+# Map labels to sorted ranks and get sorted unique IDs (efficiently processing only unique labels)
+unique_cell_ids, row_map = np.unique(counts_pl['UniqueCellId'].cat.get_categories().gather(u_row_phys).to_numpy(), return_inverse=True)
+unique_gene_ids, col_map = np.unique(counts_pl['Ensembl Id'].cat.get_categories().gather(u_col_phys).to_numpy(), return_inverse=True)
+
+# Final row and column codes are the mapped indices
+row_codes = row_map[row_idx].astype(np.int32)
+col_codes = col_map[col_idx].astype(np.int32)
 
 # Delete Polars objects to free memory - all needed data has been extracted
-del counts_pl, row_codes_raw, col_codes_raw
+del counts_pl, row_codes_raw, col_codes_raw, u_row_phys, u_col_phys, row_idx, col_idx, row_map, col_map
 
 n_cells = len(unique_cell_ids)
 n_genes = len(unique_gene_ids)
 
 # Vectorized extraction of Sample and Cell Barcode for obs (more efficient than doing it later)
 obs_df = pd.DataFrame(index=unique_cell_ids)
-split_ids = pd.Series(unique_cell_ids.values).str.split(SEPARATOR, n=1, expand=True, regex=False)
+split_ids = pd.Series(unique_cell_ids).str.split(SEPARATOR, n=1, expand=True, regex=False)
 obs_df['Sample'] = split_ids[0].values
 obs_df['Cell Barcode'] = split_ids[1].values
 
@@ -180,7 +183,7 @@ print("Running PCA on raw counts...")
 sc.pp.normalize_total(adata_harmony, target_sum=1e4)
 sc.pp.log1p(adata_harmony)
 sc.pp.scale(adata_harmony)
-sc.tl.pca(adata_harmony, n_comps=100)
+sc.tl.pca(adata_harmony, n_comps=100, random_state=0)
 
 # Apply Harmony with multiple metadata columns
 print(f"Applying Harmony batch correction using {harmony_columns}...")
@@ -204,11 +207,11 @@ harmony_df.to_csv(os.path.join(args.output, "harmony_results.csv"), index=False)
 
 # Run UMAP and tSNE
 print("Running UMAP...")
-sc.pp.neighbors(adata_harmony, use_rep="X_pca_harmony")
-sc.tl.umap(adata_harmony)
+sc.pp.neighbors(adata_harmony, use_rep="X_pca_harmony", random_state=0)
+sc.tl.umap(adata_harmony, random_state=0)
 
 print("Running tSNE...")
-sc.tl.tsne(adata_harmony, use_rep="X_pca_harmony")
+sc.tl.tsne(adata_harmony, use_rep="X_pca_harmony", random_state=0)
 
 # **Save Outputs**
 print("Saving UMAP coordinates...")
