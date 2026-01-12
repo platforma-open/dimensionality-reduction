@@ -8,6 +8,7 @@ self.body(func(args) {
     // Input parameters
     csvCounts := args.csvCounts
     csvCovariates := args.csvCovariates
+    hvgCount := args.hvgCount
     mem := args.mem
     cpu := args.cpu
 
@@ -21,6 +22,7 @@ self.body(func(args) {
         arg("--counts").arg("rawCounts.csv").
         arg("--metadata").arg("metadata.csv").
         arg("--output").arg(".").
+        arg("--hvg_count").arg(string(hvgCount)).
         saveFile("umap_dimensions.csv").
         saveFile("tsne_dimensions.csv").
         saveFile("harmony_results.csv").

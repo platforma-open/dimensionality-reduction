@@ -41,6 +41,10 @@ wf.body(func(args) {
 
 	nPCs := args.nPCs
 	nNeighbors := args.nNeighbors
+	hvgCount := 0
+	if args.hvgEnabled {
+		hvgCount = args.hvgCount
+	}
 
 	// Set default memory and CPU for imports
     defaultConvMem := "16GiB" // @TODO: set based on the size of the input
@@ -53,6 +57,7 @@ wf.body(func(args) {
 		csvCounts: csvCounts,
 		nPCs: nPCs,
 		nNeighbors: nNeighbors,
+		hvgCount: hvgCount,
 		mem: "32GiB",
 		cpu: 16
 	})
@@ -82,6 +87,7 @@ wf.body(func(args) {
 		batchCorrectionRender := render.create(batchCorrectionTpl, {
 			csvCounts: csvCounts,
 			csvCovariates: csvCovariates,
+			hvgCount: hvgCount,
 			mem: "32GiB",
 			cpu: 16
 		})

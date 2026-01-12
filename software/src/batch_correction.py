@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description="Batch correction for scRNA-seq usi
 parser.add_argument("--counts", help="Path to raw counts CSV file", required=True)
 parser.add_argument("--metadata", help="Path to metadata CSV file", required=True)
 parser.add_argument("--output", help="Path to output directory", required=True)
+parser.add_argument("--hvg_count", type=int, default=0, help="Number of highly variable genes to use (0 to disable)")
 args = parser.parse_args()
 
 # Create output directory if it doesn't exist
@@ -182,6 +183,18 @@ adata_harmony = adata.copy()  # Separate object for Harmony correction
 print("Running PCA on raw counts...")
 sc.pp.normalize_total(adata_harmony, target_sum=1e4)
 sc.pp.log1p(adata_harmony)
+
+if args.hvg_count > 0:
+    log_message(f"Finding {args.hvg_count} highly variable genes", "STEP")
+    sc.pp.highly_variable_genes(adata_harmony, n_top_genes=args.hvg_count)
+    log_message("Highly variable genes found", "DONE")
+
+    # Subset the data to the most variable genes
+    adata_harmony.raw = adata_harmony  # Store the full dataset
+    adata_harmony = adata_harmony[:, adata_harmony.var.highly_variable].copy()
+else:
+    log_message("Skipping highly variable genes selection (using all genes)", "STEP")
+
 sc.pp.scale(adata_harmony)
 sc.tl.pca(adata_harmony, n_comps=100, random_state=0)
 

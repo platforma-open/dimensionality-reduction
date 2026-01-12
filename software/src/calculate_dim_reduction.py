@@ -32,7 +32,7 @@ def log_message(message, status="INFO"):
     print(f"[{timestamp}] [{status}] {message}")
 
 
-def load_and_process_data(file_path):
+def load_and_process_data(file_path, hvg_count=0):
     log_message("Starting data loading and preprocessing with Polars", "STEP")
     
     # MEMORY OPTIMIZATION: Read string columns with repeated values as categoricals
@@ -130,13 +130,16 @@ def load_and_process_data(file_path):
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
 
-    log_message("Finding highly variable genes", "STEP")
-    sc.pp.highly_variable_genes(adata, n_top_genes=3000)
-    log_message("Highly variable genes found", "DONE")
+    if hvg_count > 0:
+        log_message(f"Finding {hvg_count} highly variable genes", "STEP")
+        sc.pp.highly_variable_genes(adata, n_top_genes=hvg_count)
+        log_message("Highly variable genes found", "DONE")
 
-    # Subset the data to the most variable genes
-    adata.raw = adata  # Store the full dataset
-    adata = adata[:, adata.var.highly_variable].copy()
+        # Subset the data to the most variable genes
+        adata.raw = adata  # Store the full dataset
+        adata = adata[:, adata.var.highly_variable].copy()
+    else:
+        log_message("Skipping highly variable genes selection (using all genes)", "STEP")
 
     log_message("Scaling data to unit variance and zero mean", "STEP")
     sc.pp.scale(adata, max_value=10)
@@ -271,6 +274,7 @@ def parse_arguments():
     parser.add_argument('--output_dir', type=str, help='Directory to store the output CSV files.')
     parser.add_argument('--n_pcs', type=int, default=50, help='Number of principal components (default: 50).')
     parser.add_argument('--n_neighbors', type=int, default=15, help='Number of neighbors for UMAP (default: 15).')
+    parser.add_argument('--hvg_count', type=int, default=0, help='Number of highly variable genes to use (0 to disable).')
     return parser.parse_args()
 
 
@@ -278,7 +282,7 @@ def main():
     log_message("Starting block execution", "INFO")
     np.random.seed(0)
     args = parse_arguments()
-    adata = load_and_process_data(args.file_path)
+    adata = load_and_process_data(args.file_path, hvg_count=args.hvg_count)
     run_dimensionality_reduction(adata, args.output_dir, args.n_pcs, args.n_neighbors)
     log_message("Block execution finished", "INFO")
 

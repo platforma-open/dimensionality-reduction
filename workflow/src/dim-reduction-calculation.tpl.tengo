@@ -9,6 +9,7 @@ self.body(func(args) {
     csvCounts := args.csvCounts
     nPCs := args.nPCs
     nNeighbors := args.nNeighbors
+    hvgCount := args.hvgCount
     mem := args.mem
     cpu := args.cpu
 
@@ -22,6 +23,7 @@ self.body(func(args) {
         arg("--output_dir").arg(".").
         arg("--n_pcs").arg(string(nPCs)).
         arg("--n_neighbors").arg(string(nNeighbors)).
+        arg("--hvg_count").arg(string(hvgCount)).
         saveFile("umap_results.csv").
         saveFile("tsne_results.csv").
         saveFile("pca_results.csv").

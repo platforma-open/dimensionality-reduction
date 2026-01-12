@@ -24,6 +24,8 @@ export type BlockArgs = {
   nPCs: number;
   nNeighbors: number;
   title?: string;
+  hvgEnabled: boolean;
+  hvgCount: number;
 };
 
 export const model = BlockModel.create()
@@ -32,6 +34,8 @@ export const model = BlockModel.create()
     covariateRefs: [],
     nPCs: 50,
     nNeighbors: 30,
+    hvgEnabled: false,
+    hvgCount: 3000,
   })
 
   .withUiState<UiState>({
@@ -91,7 +95,7 @@ export const model = BlockModel.create()
     ctx.resultPool.getOptions((spec) => isPColumnSpec(spec) && spec.name === 'pl7.app/metadata'),
   )
 
-  .output('UMAPPf', (ctx): PFrameHandle | undefined => {
+  .outputWithStatus('UMAPPf', (ctx): PFrameHandle | undefined => {
     const pCols = ctx.outputs?.resolve('UMAPPf')?.getPColumns();
     if (pCols === undefined) {
       return undefined;
@@ -121,7 +125,7 @@ export const model = BlockModel.create()
     );
   })
 
-  .output('tSNEPf', (ctx): PFrameHandle | undefined => {
+  .outputWithStatus('tSNEPf', (ctx): PFrameHandle | undefined => {
     const pCols = ctx.outputs?.resolve('tSNEPf')?.getPColumns();
     if (pCols === undefined) {
       return undefined;
@@ -151,7 +155,7 @@ export const model = BlockModel.create()
     );
   })
 
-  .output('UMAPHarmonyPf', (ctx): PFrameHandle | undefined => {
+  .outputWithStatus('UMAPHarmonyPf', (ctx): PFrameHandle | undefined => {
     const pCols = ctx.outputs?.resolve({
       field: 'UMAPHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
     })?.getPColumns();
@@ -185,7 +189,7 @@ export const model = BlockModel.create()
     );
   })
 
-  .output('tSNEHarmonyPf', (ctx): PFrameHandle | undefined => {
+  .outputWithStatus('tSNEHarmonyPf', (ctx): PFrameHandle | undefined => {
     const pCols = ctx.outputs?.resolve({
       field: 'tSNEHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
     })?.getPColumns();
