@@ -7,6 +7,7 @@ import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
 import type { PColumnIdAndSpec, PlRef } from '@platforma-sdk/model';
 import { plRefsEqual } from '@platforma-sdk/model';
+import canonicalize from 'canonicalize';
 import { computed, reactive } from 'vue';
 
 const app = useApp();
@@ -147,7 +148,7 @@ const pFrame = computed(() => {
 <template>
   <PlBlockPage>
     <GraphMaker
-      :key="`${data.currentTab}-${pFrame}`"
+      :key="canonicalize(defaultOptions)"
       v-model="graphState"
       chartType="scatterplot-umap"
       :p-frame="pFrame"
@@ -220,8 +221,7 @@ const pFrame = computed(() => {
             v-if="app.model.args.hvgEnabled"
             v-model="app.model.args.hvgCount"
             label="Number of HVG"
-            :min-value="10"
-            :max-value="20000"
+            :min-value="app.model.args.nPCs + 1"
             :step="100"
           />
           <!-- Add warnings if selected parameters are out of most commonly used bounds -->
