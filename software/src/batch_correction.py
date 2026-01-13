@@ -118,7 +118,7 @@ combat_column = metadata_columns[0]
 harmony_columns = metadata_columns
 
 log_message(f"Detected metadata columns: {metadata_columns}", "INFO")
-log_message(f"Using '{combat_column}' for ComBat correction", "INFO")
+# log_message(f"Using '{combat_column}' for ComBat correction", "INFO")
 log_message(f"Using {harmony_columns} for Harmony correction", "INFO")
 
 # Merge metadata into adata.obs

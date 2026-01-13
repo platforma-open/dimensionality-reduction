@@ -108,7 +108,7 @@ def load_and_process_data(file_path, hvg_count=0):
     sparse_matrix = csr_matrix(
         (expression_values, (row_codes, col_codes)),
         shape=(n_unique_cells, n_unique_genes),
-        dtype=np.float64
+        dtype=np.float32
     )
 
     # Create AnnData object, which requires pandas DataFrames for obs and var
