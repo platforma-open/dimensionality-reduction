@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.dimensionality-reduction.model
 
+## 1.10.0
+
+### Minor Changes
+
+- a04ff01: Migrate to latest layout and improve memory efficiency
+
 ## 1.9.5
 
 ### Patch Changes

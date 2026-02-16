@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.dimensionality-reduction.model",
-  "version": "1.9.5",
+  "version": "1.10.0",
   "description": "Block model",
   "type": "module",
   "main": "dist/index.js",

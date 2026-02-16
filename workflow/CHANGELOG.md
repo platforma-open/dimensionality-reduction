@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.dimensionality-reduction.workflow
 
+## 1.12.0
+
+### Minor Changes
+
+- a04ff01: Migrate to latest layout and improve memory efficiency
+
+### Patch Changes
+
+- Updated dependencies [a04ff01]
+  - @platforma-open/milaboratories.dimensionality-reduction.software@1.10.0
+
 ## 1.11.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.dimensionality-reduction.workflow",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Tengo-based template",
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
