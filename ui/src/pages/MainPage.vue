@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import '@milaboratories/graph-maker/styles';
-import { PlAccordionSection, PlAlert, PlBlockPage, PlDropdownMulti, PlDropdownRef, PlNumberField, PlRow, PlTabs } from '@platforma-sdk/ui-vue';
+import { PlAccordionSection, PlAlert, PlBlockPage, PlCheckbox, PlDropdownMulti, PlDropdownRef, PlNumberField, PlRow, PlTabs, PlTooltip } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 
 import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
 import type { PColumnIdAndSpec, PlRef } from '@platforma-sdk/model';
 import { plRefsEqual } from '@platforma-sdk/model';
+import canonicalize from 'canonicalize';
 import { computed, reactive } from 'vue';
 
 const app = useApp();
@@ -147,7 +148,7 @@ const pFrame = computed(() => {
 <template>
   <PlBlockPage>
     <GraphMaker
-      :key="`${data.currentTab}-${pFrame}`"
+      :key="canonicalize(defaultOptions)"
       v-model="graphState"
       chartType="scatterplot-umap"
       :p-frame="pFrame"
@@ -208,6 +209,21 @@ const pFrame = computed(() => {
               </template>
             </PlNumberField>
           </PlRow>
+          <PlCheckbox v-model="app.model.args.hvgEnabled">
+            Run on Highly Variable Genes (HVG)
+            <PlTooltip class="info">
+              <template #tooltip>
+                Restricts the analysis to the most informative biological variation by using only the top N highly variable genes (HVG), which also significantly speeds up the computation.
+              </template>
+            </PlTooltip>
+          </PlCheckbox>
+          <PlNumberField
+            v-if="app.model.args.hvgEnabled"
+            v-model="app.model.args.hvgCount"
+            label="Number of HVG"
+            :min-value="app.model.args.nPCs + 1"
+            :step="100"
+          />
           <!-- Add warnings if selected parameters are out of most commonly used bounds -->
           <PlAlert v-if="app.model.args.nPCs > 20 && app.model.args.nPCs < 30" type="warn">
             <template #title>Suboptimal PC Count</template>
