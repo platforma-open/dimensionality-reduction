@@ -17,7 +17,7 @@ def log_message(message, status="INFO"):
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Batch correction for scRNA-seq using Harmony (embeddings)")
-parser.add_argument("--counts", help="Path to raw counts CSV file", required=True)
+parser.add_argument("--counts", help="Path to long-format raw counts Parquet file", required=True)
 parser.add_argument("--metadata", help="Path to metadata CSV file", required=True)
 parser.add_argument("--output", help="Path to output directory", required=True)
 parser.add_argument("--hvg_count", type=int, default=0, help="Number of highly variable genes to use (0 to disable)")
@@ -30,7 +30,7 @@ os.makedirs(args.output, exist_ok=True)
 log_message("Loading raw counts with Polars and Categorical optimization", "STEP")
 
 # Peek schema to handle flexible headers and identify columns for Categorical casting
-temp_scan = pl.scan_csv(args.counts)
+temp_scan = pl.scan_parquet(args.counts)
 file_schema = temp_scan.collect_schema()
 column_names = set(file_schema.keys())
 
@@ -42,16 +42,16 @@ missing_base = base_required - set(column_names)
 has_cell_header = any(h in column_names for h in cell_headers)
 if missing_base or not has_cell_header:
     expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
-    raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(column_names)}")
+    raise KeyError(f"Counts Parquet must contain columns: {expected_desc}. Found: {list(column_names)}")
 
-## Second, build schema_overrides only for columns that actually exist
-schema_overrides = {}
+## Second, pick the repeated string columns worth holding as categoricals. Parquet carries its own
+## dtypes, so the cast rides in the scan plan instead of going through schema_overrides.
 categorical_candidates = ["Sample", "Ensembl Id", "Cell Barcode", "Cell ID"]
-for col in categorical_candidates:
-    if col in column_names:
-        schema_overrides[col] = pl.Categorical
+categorical_columns = [col for col in categorical_candidates if col in column_names]
 
-counts_pl = pl.read_csv(args.counts, schema_overrides=schema_overrides)
+counts_pl = temp_scan.with_columns(
+    [pl.col(col).cast(pl.Categorical) for col in categorical_columns]
+).collect()
 
 # Normalize to legacy internal name 'Cell Barcode'
 if "Cell ID" in counts_pl.columns and "Cell Barcode" not in counts_pl.columns:

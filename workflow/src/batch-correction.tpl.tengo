@@ -6,7 +6,7 @@ self.defineOutputs("umapDimensionsCsv", "tsneDimensionsCsv", "harmonyResultsCsv"
 
 self.body(func(args) {
     // Input parameters
-    csvCounts := args.csvCounts
+    countsParquet := args.countsParquet
     csvCovariates := args.csvCovariates
     hvgCount := args.hvgCount
     mem := args.mem
@@ -17,9 +17,9 @@ self.body(func(args) {
         software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-batchCorrection")).
         mem(mem).
         cpu(cpu).
-        addFile("rawCounts.csv", csvCounts).
+        addFile("rawCounts.parquet", countsParquet).
         addFile("metadata.csv", csvCovariates).
-        arg("--counts").arg("rawCounts.csv").
+        arg("--counts").arg("rawCounts.parquet").
         arg("--metadata").arg("metadata.csv").
         arg("--output").arg(".").
         arg("--hvg_count").arg(string(hvgCount)).
