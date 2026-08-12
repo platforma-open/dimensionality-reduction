@@ -1,5 +1,11 @@
 import type { GraphMakerState } from "@milaboratories/graph-maker";
-import type { InferOutputsType, PColumnIdAndSpec, PFrameHandle, PlRef } from "@platforma-sdk/model";
+import type {
+  InferOutputsType,
+  PColumnIdAndSpec,
+  PFrameHandle,
+  PlRef,
+  TreeNodeAccessor,
+} from "@platforma-sdk/model";
 import { BlockModel, isPColumn, isPColumnSpec } from "@platforma-sdk/model";
 
 export type UiState = {
@@ -19,7 +25,7 @@ export type BlockArgs = {
   hvgCount: number;
 };
 
-export const model = BlockModel.create()
+export const platforma = BlockModel.create()
 
   .withArgs<BlockArgs>({
     covariateRefs: [],
@@ -99,7 +105,7 @@ export const model = BlockModel.create()
     const upstream = ctx.resultPool
       .getData()
       .entries.map((v) => v.obj)
-      .filter(isPColumn)
+      .filter(isPColumn<TreeNodeAccessor>)
       .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
@@ -128,7 +134,7 @@ export const model = BlockModel.create()
     const upstream = ctx.resultPool
       .getData()
       .entries.map((v) => v.obj)
-      .filter(isPColumn)
+      .filter(isPColumn<TreeNodeAccessor>)
       .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
@@ -163,7 +169,7 @@ export const model = BlockModel.create()
     const upstream = ctx.resultPool
       .getData()
       .entries.map((v) => v.obj)
-      .filter(isPColumn)
+      .filter(isPColumn<TreeNodeAccessor>)
       .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
@@ -204,7 +210,7 @@ export const model = BlockModel.create()
     const upstream = ctx.resultPool
       .getData()
       .entries.map((v) => v.obj)
-      .filter(isPColumn)
+      .filter(isPColumn<TreeNodeAccessor>)
       .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
@@ -243,4 +249,4 @@ export const model = BlockModel.create()
 
   .done(2);
 
-export type BlockOutputs = InferOutputsType<typeof model>;
+export type BlockOutputs = InferOutputsType<typeof platforma>;
