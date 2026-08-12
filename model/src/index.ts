@@ -1,15 +1,6 @@
-import type { GraphMakerState } from '@milaboratories/graph-maker';
-import type {
-  InferOutputsType,
-  PColumnIdAndSpec,
-  PFrameHandle,
-  PlRef,
-} from '@platforma-sdk/model';
-import {
-  BlockModel,
-  isPColumn,
-  isPColumnSpec,
-} from '@platforma-sdk/model';
+import type { GraphMakerState } from "@milaboratories/graph-maker";
+import type { InferOutputsType, PColumnIdAndSpec, PFrameHandle, PlRef } from "@platforma-sdk/model";
+import { BlockModel, isPColumn, isPColumnSpec } from "@platforma-sdk/model";
 
 export type UiState = {
   graphStateUMAP: GraphMakerState;
@@ -40,42 +31,42 @@ export const model = BlockModel.create()
 
   .withUiState<UiState>({
     graphStateUMAP: {
-      title: 'UMAP',
-      template: 'dots',
-      currentTab: 'settings',
+      title: "UMAP",
+      template: "dots",
+      currentTab: "settings",
       layersSettings: {
         dots: {
-          dotFill: '#99E099',
+          dotFill: "#99E099",
         },
       },
     },
     graphStateTSNE: {
-      title: 'tSNE',
-      template: 'dots',
+      title: "tSNE",
+      template: "dots",
       currentTab: null,
       layersSettings: {
         dots: {
-          dotFill: '#99E099',
+          dotFill: "#99E099",
         },
       },
     },
     graphStateUMAPHarmony: {
-      title: 'UMAP (Harmony)',
-      template: 'dots',
+      title: "UMAP (Harmony)",
+      template: "dots",
       currentTab: null,
       layersSettings: {
         dots: {
-          dotFill: '#99E099',
+          dotFill: "#99E099",
         },
       },
     },
     graphStateTSNEHarmony: {
-      title: 'tSNE (Harmony)',
-      template: 'dots',
+      title: "tSNE (Harmony)",
+      template: "dots",
       currentTab: null,
       layersSettings: {
         dots: {
-          dotFill: '#99E099',
+          dotFill: "#99E099",
         },
       },
     },
@@ -83,20 +74,23 @@ export const model = BlockModel.create()
 
   .argsValid((ctx) => ctx.args.countsRef !== undefined)
 
-  .output('countsOptions', (ctx) =>
-    ctx.resultPool.getOptions((spec) => isPColumnSpec(spec)
-      && spec.name === 'pl7.app/rna-seq/countMatrix'
-      && spec.domain?.['pl7.app/rna-seq/normalized'] === 'false'
+  .output("countsOptions", (ctx) =>
+    ctx.resultPool.getOptions(
+      (spec) =>
+        isPColumnSpec(spec) &&
+        spec.name === "pl7.app/rna-seq/countMatrix" &&
+        spec.domain?.["pl7.app/rna-seq/normalized"] === "false",
       // && spec.annotations?.['pl7.app/hideDataFromGraphs'] === 'true'
-    , { includeNativeLabel: false, addLabelAsSuffix: true }),
+      { includeNativeLabel: false, addLabelAsSuffix: true },
+    ),
   )
 
-  .output('metadataOptions', (ctx) =>
-    ctx.resultPool.getOptions((spec) => isPColumnSpec(spec) && spec.name === 'pl7.app/metadata'),
+  .output("metadataOptions", (ctx) =>
+    ctx.resultPool.getOptions((spec) => isPColumnSpec(spec) && spec.name === "pl7.app/metadata"),
   )
 
-  .outputWithStatus('UMAPPf', (ctx): PFrameHandle | undefined => {
-    const pCols = ctx.outputs?.resolve('UMAPPf')?.getPColumns();
+  .outputWithStatus("UMAPPf", (ctx): PFrameHandle | undefined => {
+    const pCols = ctx.outputs?.resolve("UMAPPf")?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
@@ -106,27 +100,26 @@ export const model = BlockModel.create()
       .getData()
       .entries.map((v) => v.obj)
       .filter(isPColumn)
-      .filter((column) => column.id.includes('metadata'));
+      .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
   })
 
-  .output('UMAPPfPcols', (ctx) => {
-    const pCols = ctx.outputs?.resolve('UMAPPf')?.getPColumns();
-    if (pCols === undefined)
-      return undefined;
+  .output("UMAPPfPcols", (ctx) => {
+    const pCols = ctx.outputs?.resolve("UMAPPf")?.getPColumns();
+    if (pCols === undefined) return undefined;
 
     return pCols.map(
       (c) =>
         ({
           columnId: c.id,
           spec: c.spec,
-        } satisfies PColumnIdAndSpec),
+        }) satisfies PColumnIdAndSpec,
     );
   })
 
-  .outputWithStatus('tSNEPf', (ctx): PFrameHandle | undefined => {
-    const pCols = ctx.outputs?.resolve('tSNEPf')?.getPColumns();
+  .outputWithStatus("tSNEPf", (ctx): PFrameHandle | undefined => {
+    const pCols = ctx.outputs?.resolve("tSNEPf")?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
@@ -136,29 +129,32 @@ export const model = BlockModel.create()
       .getData()
       .entries.map((v) => v.obj)
       .filter(isPColumn)
-      .filter((column) => column.id.includes('metadata'));
+      .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
   })
 
-  .output('tSNEPfPcols', (ctx) => {
-    const pCols = ctx.outputs?.resolve('tSNEPf')?.getPColumns();
-    if (pCols === undefined)
-      return undefined;
+  .output("tSNEPfPcols", (ctx) => {
+    const pCols = ctx.outputs?.resolve("tSNEPf")?.getPColumns();
+    if (pCols === undefined) return undefined;
 
     return pCols.map(
       (c) =>
         ({
           columnId: c.id,
           spec: c.spec,
-        } satisfies PColumnIdAndSpec),
+        }) satisfies PColumnIdAndSpec,
     );
   })
 
-  .outputWithStatus('UMAPHarmonyPf', (ctx): PFrameHandle | undefined => {
-    const pCols = ctx.outputs?.resolve({
-      field: 'UMAPHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
-    })?.getPColumns();
+  .outputWithStatus("UMAPHarmonyPf", (ctx): PFrameHandle | undefined => {
+    const pCols = ctx.outputs
+      ?.resolve({
+        field: "UMAPHarmonyPf",
+        assertFieldType: "Input",
+        allowPermanentAbsence: true,
+      })
+      ?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
@@ -168,31 +164,38 @@ export const model = BlockModel.create()
       .getData()
       .entries.map((v) => v.obj)
       .filter(isPColumn)
-      .filter((column) => column.id.includes('metadata'));
+      .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
   })
 
-  .output('UMAPHarmonyPfPcols', (ctx) => {
-    const pCols = ctx.outputs?.resolve({
-      field: 'UMAPHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
-    })?.getPColumns();
-    if (pCols === undefined)
-      return undefined;
+  .output("UMAPHarmonyPfPcols", (ctx) => {
+    const pCols = ctx.outputs
+      ?.resolve({
+        field: "UMAPHarmonyPf",
+        assertFieldType: "Input",
+        allowPermanentAbsence: true,
+      })
+      ?.getPColumns();
+    if (pCols === undefined) return undefined;
 
     return pCols.map(
       (c) =>
         ({
           columnId: c.id,
           spec: c.spec,
-        } satisfies PColumnIdAndSpec),
+        }) satisfies PColumnIdAndSpec,
     );
   })
 
-  .outputWithStatus('tSNEHarmonyPf', (ctx): PFrameHandle | undefined => {
-    const pCols = ctx.outputs?.resolve({
-      field: 'tSNEHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
-    })?.getPColumns();
+  .outputWithStatus("tSNEHarmonyPf", (ctx): PFrameHandle | undefined => {
+    const pCols = ctx.outputs
+      ?.resolve({
+        field: "tSNEHarmonyPf",
+        assertFieldType: "Input",
+        allowPermanentAbsence: true,
+      })
+      ?.getPColumns();
     if (pCols === undefined) {
       return undefined;
     }
@@ -202,41 +205,40 @@ export const model = BlockModel.create()
       .getData()
       .entries.map((v) => v.obj)
       .filter(isPColumn)
-      .filter((column) => column.id.includes('metadata'));
+      .filter((column) => column.id.includes("metadata"));
 
     return ctx.createPFrame([...pCols, ...upstream]);
   })
 
-  .output('tSNEHarmonyPfPcols', (ctx) => {
-    const pCols = ctx.outputs?.resolve({
-      field: 'tSNEHarmonyPf', assertFieldType: 'Input', allowPermanentAbsence: true,
-    })?.getPColumns();
-    if (pCols === undefined)
-      return undefined;
+  .output("tSNEHarmonyPfPcols", (ctx) => {
+    const pCols = ctx.outputs
+      ?.resolve({
+        field: "tSNEHarmonyPf",
+        assertFieldType: "Input",
+        allowPermanentAbsence: true,
+      })
+      ?.getPColumns();
+    if (pCols === undefined) return undefined;
 
     return pCols.map(
       (c) =>
         ({
           columnId: c.id,
           spec: c.spec,
-        } satisfies PColumnIdAndSpec),
+        }) satisfies PColumnIdAndSpec,
     );
   })
 
-  .output('hasBatchCorrection', (ctx) => {
+  .output("hasBatchCorrection", (ctx) => {
     return ctx.args.covariateRefs.length > 0;
   })
 
-  .output('isRunning', (ctx) => ctx.outputs?.getIsReadyOrError() === false)
+  .output("isRunning", (ctx) => ctx.outputs?.getIsReadyOrError() === false)
 
-  .sections((_ctx) => ([
-    { type: 'link', href: '/', label: 'Main' },
-  ]))
+  .sections((_ctx) => [{ type: "link", href: "/", label: "Main" }])
 
   .title((ctx) =>
-    ctx.args.title
-      ? `Dimensionality Reduction - ${ctx.args.title}`
-      : 'Dimensionality Reduction',
+    ctx.args.title ? `Dimensionality Reduction - ${ctx.args.title}` : "Dimensionality Reduction",
   )
 
   .done(2);
