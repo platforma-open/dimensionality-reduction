@@ -39,8 +39,8 @@ def load_and_process_data(file_path, hvg_count=0):
     # Sample,Cell Barcode/Cell ID, Ensembl Id
     
     ## First, peek at the schema to see which columns exist (lazy operation, doesn't load data)
-    log_message("Scanning CSV schema to identify columns", "STEP")
-    temp_scan = pl.scan_csv(file_path)
+    log_message("Scanning Parquet schema to identify columns", "STEP")
+    temp_scan = pl.scan_parquet(file_path)
     file_schema = temp_scan.collect_schema()
     column_names = set(file_schema.keys())
 
@@ -52,19 +52,19 @@ def load_and_process_data(file_path, hvg_count=0):
     has_cell_header = any(h in column_names for h in cell_headers)
     if missing_base or not has_cell_header:
         expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
-        raise KeyError(f"Counts CSV must contain columns: {expected_desc}. Found: {list(column_names)}")
-    
-    ## Second, build schema_overrides only for columns that actually exist
-    schema_overrides = {}
+        raise KeyError(f"Counts Parquet must contain columns: {expected_desc}. Found: {list(column_names)}")
+
+    ## Second, pick the repeated string columns worth holding as categoricals. Parquet carries its
+    ## own dtypes, so the cast rides in the scan plan instead of going through schema_overrides.
     categorical_candidates = ["Sample", "Ensembl Id", "Cell Barcode", "Cell ID"]
-    for col in categorical_candidates:
-        if col in column_names:
-            schema_overrides[col] = pl.Categorical
-    
-    log_message(f"Reading CSV with categorical types for: {list(schema_overrides.keys())}", "STEP")
-    
+    categorical_columns = [col for col in categorical_candidates if col in column_names]
+
+    log_message(f"Reading Parquet with categorical types for: {categorical_columns}", "STEP")
+
     ## Finally, load the data with categorical types for repeated string columns
-    raw_data_long_pl = pl.read_csv(file_path, schema_overrides=schema_overrides)
+    raw_data_long_pl = temp_scan.with_columns(
+        [pl.col(col).cast(pl.Categorical) for col in categorical_columns]
+    ).collect()
     log_message(f"Loaded data from {file_path}, shape: {raw_data_long_pl.shape}")
 
     # Normalize to legacy internal name 'Cell Barcode'
@@ -270,7 +270,7 @@ def run_dimensionality_reduction(adata, output_dir, n_pcs, n_neighbors):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process counts in long format and perform dimensionality reduction.')
-    parser.add_argument('--file_path', type=str, help='Path to the counts CSV file.')
+    parser.add_argument('--file_path', type=str, help='Path to the long-format counts Parquet file.')
     parser.add_argument('--output_dir', type=str, help='Directory to store the output CSV files.')
     parser.add_argument('--n_pcs', type=int, default=50, help='Number of principal components (default: 50).')
     parser.add_argument('--n_neighbors', type=int, default=15, help='Number of neighbors for UMAP (default: 15).')

@@ -46,15 +46,23 @@ wf.body(func(args) {
 		hvgCount = args.hvgCount
 	}
 
-	// Set default memory and CPU for imports
+	// Set default memory and CPU for imports of the dimensionality reduction results
+	// (one row per cell per dimension - orders of magnitude smaller than the counts matrix).
     defaultConvMem := "16GiB" // @TODO: set based on the size of the input
     defaultConvCpu := 1 // @TODO: set based on the size of the input
 
-	csvCounts := xsv.exportFrame([rawCounts], "csv", { mem: defaultConvMem, cpu: defaultConvCpu })
+	// The counts export is the heaviest conversion in the block: the long-format counts p-column
+	// holds one row per non-zero (cell, gene) pair, which reaches hundreds of millions of rows on
+	// real datasets. Parquet keeps it columnar and streams through sink_parquet, instead of paying
+	// CSV text encoding for three high-cardinality string columns.
+	countsConvMem := "32GiB" // @TODO: set based on the size of the input
+	countsConvCpu := 4 // @TODO: set based on the size of the input
+
+	countsParquet := xsv.exportFrame([rawCounts], "parquet", { mem: countsConvMem, cpu: countsConvCpu })
 
 	// Always run regular dimensionality reduction
 	dimReductionRender := render.create(dimReductionTpl, {
-		csvCounts: csvCounts,
+		countsParquet: countsParquet,
 		nPCs: nPCs,
 		nNeighbors: nNeighbors,
 		hvgCount: hvgCount,
@@ -85,7 +93,7 @@ wf.body(func(args) {
 		csvCovariates := xsv.exportFrame(covariates, "csv", {})
 
 		batchCorrectionRender := render.create(batchCorrectionTpl, {
-			csvCounts: csvCounts,
+			countsParquet: countsParquet,
 			csvCovariates: csvCovariates,
 			hvgCount: hvgCount,
 			mem: "32GiB",

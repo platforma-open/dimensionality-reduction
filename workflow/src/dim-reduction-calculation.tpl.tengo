@@ -6,7 +6,7 @@ self.defineOutputs("umapResultsCsv", "tsneResultsCsv", "pcaResultsCsv")
 
 self.body(func(args) {
     // Input parameters
-    csvCounts := args.csvCounts
+    countsParquet := args.countsParquet
     nPCs := args.nPCs
     nNeighbors := args.nNeighbors
     hvgCount := args.hvgCount
@@ -18,8 +18,8 @@ self.body(func(args) {
         software(assets.importSoftware("@platforma-open/milaboratories.dimensionality-reduction.software:calculate-dimRed")).
         mem(mem).
         cpu(cpu).
-        addFile("rawCounts.csv", csvCounts).
-        arg("--file_path").arg("rawCounts.csv").
+        addFile("rawCounts.parquet", countsParquet).
+        arg("--file_path").arg("rawCounts.parquet").
         arg("--output_dir").arg(".").
         arg("--n_pcs").arg(string(nPCs)).
         arg("--n_neighbors").arg(string(nNeighbors)).

@@ -1,27 +1,30 @@
 {
   "name": "@platforma-open/milaboratories.dimensionality-reduction.test",
-  "private": true,
   "version": "1.2.0",
+  "private": true,
   "description": "Block tests",
-  "scripts": {
-    "test": "vitest --run --passWithNoTests",
-    "lint": "eslint .",
-    "type-check": "ts-builder types --target block-test"
-  },
-  "files": [],
   "keywords": [],
+  "files": [],
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "type-check": "ts-builder types --target block-test",
+    "fmt": "ts-builder format",
+    "check": "ts-builder check --target block-test"
+  },
   "dependencies": {
-    "this-block": "workspace:@platforma-open/milaboratories.dimensionality-reduction@*",
     "@platforma-open/milaboratories.dimensionality-reduction.model": "workspace:*",
-    "@platforma-sdk/model": "catalog:"
+    "@platforma-sdk/model": "catalog:",
+    "this-block": "workspace:@platforma-open/milaboratories.dimensionality-reduction@*"
   },
   "devDependencies": {
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/eslint-config": "catalog:",
     "@platforma-sdk/test": "catalog:",
     "eslint": "catalog:",
-    "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "*"
   }
 }
