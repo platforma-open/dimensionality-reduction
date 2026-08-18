@@ -1,5 +1,12 @@
 # @platforma-open/milaboratories.dimensionality-reduction.test
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [11a9a50]
+  - @platforma-open/milaboratories.dimensionality-reduction.model@1.10.1
+
 ## 1.2.0
 
 ### Minor Changes
